@@ -1,0 +1,44 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Helper: check if the caller has an admin role in Firestore ──────────
+    function isAdmin() {
+      return request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/members/$(request.auth.token.email)
+        ).data.role in ['secretary', 'president', 'superAdmin'];
+    }
+
+    // ── Profile photos ──────────────────────────────────────────────────────
+    // Path: profiles/{email}/photo
+    // • Any authenticated user can READ (needed to display in portal, Word doc)
+    // • Members can WRITE their own photo; admins can write any member's photo
+    // • Max file size: 5 MB — enforced by rule
+    match /profiles/{email}/photo {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size  < 5 * 1024 * 1024      // 5 MB max
+        && request.resource.contentType.matches('image/.*')
+        && (request.auth.token.email == email || isAdmin());
+    }
+
+    // ── Event photos ─────────────────────────────────────────────────────────
+    // Path: events/{eventId}/{filename}
+    // • Any authenticated user can READ
+    // • Only admins can WRITE / DELETE
+    // • Max file size: 10 MB
+    match /events/{eventId}/{filename} {
+      allow read:   if request.auth != null;
+      allow write:  if isAdmin()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
+    }
+
+    // Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

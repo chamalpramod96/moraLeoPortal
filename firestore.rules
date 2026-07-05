@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Fetch the caller's member document (cached by Firestore per request)
+    function callerRole() {
+      return get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.role;
+    }
+
+    // secretary, president, or superAdmin  →  full admin access
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/members/$(request.auth.token.email)) &&
+        callerRole() in ['secretary', 'president', 'superAdmin'];
+    }
+
+    // only superAdmin can touch accounts that carry the superAdmin role
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/members/$(request.auth.token.email)) &&
+        callerRole() == 'superAdmin';
+    }
+
+    // ── Members ──────────────────────────────────────────────────────────────
+    match /members/{memberEmail} {
+      // Any authenticated user reads their own doc; admins read all
+      allow read: if request.auth.token.email == memberEmail || isAdmin();
+
+      // Any admin can create a member, UNLESS they're assigning the superAdmin role
+      allow create: if isAdmin() &&
+        (request.resource.data.role != 'superAdmin' || isSuperAdmin());
+
+      // Any admin can update, BUT:
+      //   • cannot change a role TO superAdmin (unless they're superAdmin)
+      //   • cannot change a role FROM superAdmin (unless they're superAdmin)
+      allow update: if isAdmin() && (
+        (resource.data.role != 'superAdmin' && request.resource.data.role != 'superAdmin') ||
+        isSuperAdmin()
+      );
+
+      // Only superAdmin can permanently delete a member account
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── Events ───────────────────────────────────────────────────────────────
+    match /events/{eventId} {
+      allow read:                     if isAuthenticated();
+      allow create, update, delete:   if isAdmin();
+    }
+
+    // ── Attendance ───────────────────────────────────────────────────────────
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated() && (
+        resource.data.memberId == request.auth.token.email || isAdmin()
+      );
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Manual points ────────────────────────────────────────────────────────
+    match /memberPoints/{pointId} {
+      allow read: if isAuthenticated() && (
+        resource.data.memberId == request.auth.token.email || isAdmin()
+      );
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

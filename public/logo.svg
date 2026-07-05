@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Outer circle -->
+  <circle cx="60" cy="60" r="58" fill="#100003" stroke="#C9A84C" stroke-width="2.5"/>
+  <!-- Inner accent ring -->
+  <circle cx="60" cy="60" r="50" fill="none" stroke="#CC0000" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.7"/>
+  <!-- "LEO" bold text -->
+  <text x="60" y="46" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="22" font-weight="bold" letter-spacing="4"
+        fill="#CC0000">LEO</text>
+  <!-- Gold divider line -->
+  <line x1="28" y1="54" x2="92" y2="54" stroke="#C9A84C" stroke-width="0.8" opacity="0.8"/>
+  <!-- "CLUB OF" -->
+  <text x="60" y="66" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="8.5" letter-spacing="2"
+        fill="#C9A84C">CLUB OF</text>
+  <!-- "MORATUWA" -->
+  <text x="60" y="78" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="9" font-weight="bold" letter-spacing="1.5"
+        fill="#C9A84C">MORATUWA</text>
+  <!-- Bottom gold arc decoration -->
+  <path d="M 32 90 Q 60 100 88 90" fill="none" stroke="#C9A84C" stroke-width="0.8" opacity="0.5"/>
+</svg>

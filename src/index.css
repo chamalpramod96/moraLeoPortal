@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-main:    #080001;
+  --bg-card:    #100003;
+  --bg-hover:   #1a0005;
+  --red:        #CC0000;
+  --red-hover:  #aa0000;
+  --gold:       #C9A84C;
+  --gold-light: #e0c068;
+  --text-main:  #f0f0f0;
+  --text-muted: #a09090;
+  --border:        rgba(255, 255, 255, 0.06);
+  --border-gold:   rgba(201, 168, 76, 0.35);
+}
+
+/* ── Base ─────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  background-color: #080001;
+  color: #f0f0f0;
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, select, textarea, button {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ── Scrollbar ────────────────────────── */
+::-webkit-scrollbar           { width: 6px; height: 6px; }
+::-webkit-scrollbar-track     { background: #100003; }
+::-webkit-scrollbar-thumb     { background: #C9A84C; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #e0c068; }
+
+/* ── Utilities ────────────────────────── */
+@layer utilities {
+  .border-gold   { border-color: rgba(201, 168, 76, 0.35); }
+  .border-subtle { border-color: rgba(255, 255, 255, 0.06); }
+
+  .input-base {
+    @apply w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
+           text-portal-text placeholder-portal-muted/50
+           focus:outline-none focus:border-portal-gold/50 transition-colors text-sm;
+  }
+
+  .btn-primary {
+    @apply bg-portal-red hover:bg-portal-red-dark disabled:opacity-50
+           disabled:cursor-not-allowed text-white font-semibold px-4 py-2
+           rounded-lg transition-colors text-sm flex items-center justify-center gap-2;
+  }
+
+  .btn-secondary {
+    @apply border border-gold text-portal-gold hover:bg-portal-gold/10
+           font-medium px-4 py-2 rounded-lg transition-colors text-sm
+           flex items-center justify-center gap-2;
+  }
+
+  .btn-danger {
+    @apply bg-red-800 hover:bg-red-900 text-white font-medium px-4 py-2
+           rounded-lg transition-colors text-sm flex items-center justify-center gap-2;
+  }
+
+  .card {
+    @apply bg-portal-card border border-white/5 rounded-xl;
+  }
+
+  .card-gold {
+    @apply bg-portal-card border border-gold rounded-xl;
+  }
+}
