@@ -10,7 +10,7 @@ import { MOCK_MEMBERS } from '../data/mockData';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const IS_DEMO   = import.meta.env.VITE_DEMO_MODE === 'true';
-const DEMO_PASS = 'demo1234';
+const DEMO_PASS = import.meta.env.VITE_DEMO_PASSWORD || 'demo1234';
 
 // Roles that have admin (management) access
 export const ADMIN_ROLES = ['secretary', 'president', 'superAdmin'];
