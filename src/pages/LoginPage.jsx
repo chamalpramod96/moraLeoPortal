@@ -169,6 +169,18 @@ function LoginPage() {
                 </>
               )}
             </button>
+
+            {/* Forgot Password Link */}
+            <div className="text-center mt-3">
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="text-portal-gold hover:text-portal-gold/80 text-xs transition-colors"
+              >
+                <i className="fa-solid fa-key mr-1" />
+                Forgot your password?
+              </button>
+            </div>
           </form>
         </div>
 

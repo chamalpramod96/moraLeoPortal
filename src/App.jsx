@@ -4,6 +4,7 @@ import { ToastProvider }  from './context/ToastContext';
 import ProtectedRoute     from './components/ProtectedRoute';
 import Layout             from './components/Layout';
 import LoginPage          from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage      from './pages/DashboardPage';
 import ProfilePage        from './pages/ProfilePage';
 import EventsPage         from './pages/EventsPage';
@@ -21,6 +22,7 @@ function App() {
           <Routes>
             {/* Public */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
             {/* Authenticated shell */}
             <Route

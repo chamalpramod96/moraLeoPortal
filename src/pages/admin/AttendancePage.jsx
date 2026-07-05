@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth }               from '../../context/AuthContext';
 import { getEvent, getAttendanceForEvent, saveEventAttendance } from '../../services/eventService';

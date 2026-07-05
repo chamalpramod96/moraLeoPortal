@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth }             from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
-import { getMemberManualPoints, calcEventPoints, calcManualPoints } from '../services/pointsService';
+import { getMemberManualPoints, calcEventPoints } from '../services/pointsService';
 import { downloadMemberProfile } from '../services/wordExport';
 import { useProfilePhoto }       from '../hooks/useProfilePhoto';
 import { useToast }            from '../context/ToastContext';
 import Badge                   from '../components/Badge';
 import LoadingSpinner          from '../components/LoadingSpinner';
-import { getLevelInfo }        from '../data/pointsConfig';
 import { getManualCategory }   from '../data/pointsConfig';
 import { formatDate, formatDateShort, calcAttendanceRate } from '../utils/helpers';
 
@@ -59,9 +58,6 @@ function ProfilePage() {
   const rate      = calcAttendanceRate(attended, attendance.length);
 
   const totalEventPts  = calcEventPoints(memberData?.email ?? '', attendance, events);
-  const totalManualPts = calcManualPoints(memberData?.email ?? '', manualPts);
-  const totalPoints    = totalEventPts + totalManualPts;
-  const { current: lvl, next: nextLvl, progressPct } = getLevelInfo(totalPoints);
 
   // Join attendance with events
   const attWithEvent = attendance.map(rec => ({
@@ -178,49 +174,19 @@ function ProfilePage() {
           <div className="text-portal-muted text-xs mt-1">Rate</div>
         </div>
       </div>
-      {/* ── Mora Miglioria Points ──────────────────────────────────────────── */}
+      {/* ── Mora Connect Points ──────────────────────────────────────────── */}
       <div className="card rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-subtle flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-subtle">
           <h2 className="font-semibold text-portal-text flex items-center gap-2">
             <i className="fa-solid fa-trophy text-portal-gold" />
-            Mora Miglioria Points
+            Mora Connect Points
           </h2>
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold
-                           ${lvl.border ?? lvl.borderClass ?? 'border-gray-600'}
-                           ${lvl.bg ?? lvl.bgClass} ${lvl.color ?? lvl.colorClass}`}>
-            <i className="fa-solid fa-star opacity-70" />{lvl.label}
-          </span>
         </div>
 
         <div className="px-5 py-4 space-y-4">
-          {/* Total + progress */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div>
-              <p className="text-3xl font-bold text-portal-text">{totalPoints.toLocaleString()}</p>
-              <p className="text-xs text-portal-muted mt-0.5">
-                {totalEventPts.toLocaleString()} event attendance pts
-                &nbsp;·&nbsp;
-                {totalManualPts.toLocaleString()} manual / other pts
-              </p>
-            </div>
-            {nextLvl && (
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between text-xs text-portal-muted mb-1">
-                  <span>{lvl.label}</span>
-                  <span className={nextLvl.color ?? nextLvl.colorClass}>{nextLvl.label}</span>
-                </div>
-                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700
-                                ${(lvl.color ?? lvl.colorClass).replace('text-', 'bg-')}`}
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
-                <p className="text-xs text-portal-muted mt-1">
-                  {(nextLvl.minPoints - totalPoints).toLocaleString()} pts to {nextLvl.label}
-                </p>
-              </div>
-            )}
+          <div>
+            <p className="text-3xl font-bold text-portal-text">{totalEventPts.toLocaleString()}</p>
+            <p className="text-xs text-portal-muted mt-0.5">participation points</p>
           </div>
 
           {/* Manual points breakdown */}

@@ -14,6 +14,7 @@ import Badge                  from '../../components/Badge';
 import LoadingSpinner         from '../../components/LoadingSpinner';
 import { formatDateShort }    from '../../utils/helpers';
 import { MANUAL_POINT_CATEGORIES, groupedManualCategories, getManualCategory } from '../../data/pointsConfig';
+import AddMemberForm          from './AddMemberForm';
 
 const EMPTY_FORM = {
   memberId: '', fullName: '', email: '', phone: '',
@@ -111,8 +112,6 @@ function MembersPage() {
   const [form,      setForm]     = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [saving,    setSaving]   = useState(false);
-
-  // ── Filtered list ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return members.filter(m => {
       const q  = search.toLowerCase();
@@ -134,31 +133,26 @@ function MembersPage() {
 
   // ── Form helpers ──────────────────────────────────────────────────────────
   const openAdd = () => {
-    setForm(EMPTY_FORM);
     setFormError('');
     setShowAdd(true);
   };
 
   const openEdit = (m) => {
-    setForm({ ...EMPTY_FORM, ...m, password: '' });
     setFormError('');
     setEditItem(m);
   };
 
-  const fld = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
-
   // ── Save (add) ────────────────────────────────────────────────────────────
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!form.email || !form.password || !form.fullName) {
+  const handleAdd = async (formData) => {
+    if (!formData.email || !formData.password || !formData.fullName) {
       setFormError('Full Name, Email and Password are required.');
       return;
     }
     setSaving(true);
     setFormError('');
     try {
-      await createMember(form, form.password);
-      showToast(`Member "${form.fullName}" added successfully.`, 'success');
+      await createMember(formData, formData.password);
+      showToast(`Member "${formData.fullName}" added successfully.`, 'success');
       setShowAdd(false);
       refetch();
     } catch (err) {
@@ -169,12 +163,11 @@ function MembersPage() {
   };
 
   // ── Save (edit) ───────────────────────────────────────────────────────────
-  const handleEdit = async (e) => {
-    e.preventDefault();
+  const handleEdit = async (formData) => {
     setSaving(true);
     setFormError('');
     try {
-      const { password, ...updates } = form;
+      const { password, ...updates } = formData;
       await updateMember(editItem.email, updates);
       showToast('Member updated.', 'success');
       setEditItem(null);
@@ -208,110 +201,7 @@ function MembersPage() {
   if (loading) return <LoadingSpinner />;
 
   // ── Form fields (reused for add + edit) ──────────────────────────────────
-  const FormFields = ({ isAdd }) => (
-    <div className="space-y-4">
-      {formError && (
-        <p className="text-red-400 text-sm bg-red-900/20 border border-red-600/30 rounded-lg px-3 py-2">
-          <i className="fa-solid fa-circle-exclamation mr-2" />{formError}
-        </p>
-      )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-xs text-portal-muted mb-1">Full Name *</label>
-          <input value={form.fullName} onChange={fld('fullName')}
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50"
-            required />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-xs text-portal-muted mb-1">Member ID</label>
-          <input value={form.memberId} onChange={fld('memberId')}
-            placeholder="LCM-2025-001"
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50" />
-        </div>
-
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-xs text-portal-muted mb-1">Email *</label>
-          <input type="email" value={form.email} onChange={fld('email')}
-            disabled={!isAdd}
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50
-                       disabled:opacity-50 disabled:cursor-not-allowed"
-            required />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-xs text-portal-muted mb-1">Phone</label>
-          <input value={form.phone} onChange={fld('phone')}
-            placeholder="+94 77 123 4567"
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50" />
-        </div>
-
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-xs text-portal-muted mb-1">Position</label>
-          <input value={form.position} onChange={fld('position')}
-            placeholder="Vice President"
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50" />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-xs text-portal-muted mb-1">Term</label>
-          <input value={form.term} onChange={fld('term')}
-            placeholder="2025/26"
-            list="term-list"
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50" />
-          <datalist id="term-list">
-            {TERMS.map(t => <option key={t} value={t} />)}
-          </datalist>
-        </div>
-
-        <div>
-          <label className="block text-xs text-portal-muted mb-1">Role</label>
-          <select value={form.role} onChange={fld('role')}
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50">
-            {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-portal-muted mb-1">Profile Photo URL</label>
-          <input value={form.profilePhoto} onChange={fld('profilePhoto')}
-            placeholder="https://…"
-            className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                       text-portal-text text-sm focus:outline-none focus:border-portal-gold/50" />
-        </div>
-
-        {isAdd && (
-          <div className="col-span-2">
-            <label className="block text-xs text-portal-muted mb-1">Initial Password *</label>
-            <input type="password" value={form.password} onChange={fld('password')}
-              placeholder="Min. 6 characters"
-              className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                         text-portal-text text-sm focus:outline-none focus:border-portal-gold/50"
-              required minLength={6} />
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button"
-          onClick={() => isAdd ? setShowAdd(false) : setEditItem(null)}
-          className="border border-gold text-portal-muted hover:text-portal-text
-                     px-4 py-2 rounded-lg text-sm transition-colors">
-          Cancel
-        </button>
-        <button type="submit" disabled={saving}
-          className="bg-portal-red hover:bg-portal-red-dark disabled:opacity-50 text-white
-                     font-semibold px-5 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
-          {saving && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-          {isAdd ? 'Add Member' : 'Save Changes'}
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-5">
@@ -549,17 +439,36 @@ function MembersPage() {
       </Modal>
 
       {/* Add Member Modal */}
+      {/* Add Member Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Member" size="lg">
-        <form onSubmit={handleAdd}>
-          <FormFields isAdd={true} />
-        </form>
+        {showAdd && (
+          <AddMemberForm
+            key="add-form"
+            initialForm={EMPTY_FORM}
+            roles={ROLES}
+            isAdd={true}
+            formError={formError}
+            saving={saving}
+            onSubmit={handleAdd}
+            onCancel={() => setShowAdd(false)}
+          />
+        )}
       </Modal>
 
       {/* Edit Member Modal */}
       <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Edit Member" size="lg">
-        <form onSubmit={handleEdit}>
-          <FormFields isAdd={false} />
-        </form>
+        {!!editItem && (
+          <AddMemberForm
+            key="edit-form"
+            initialForm={{ ...EMPTY_FORM, ...editItem, password: '' }}
+            roles={ROLES}
+            isAdd={false}
+            formError={formError}
+            saving={saving}
+            onSubmit={handleEdit}
+            onCancel={() => setEditItem(null)}
+          />
+        )}
       </Modal>
 
       {/* Confirm deactivate/activate */}

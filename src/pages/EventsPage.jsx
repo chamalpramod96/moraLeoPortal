@@ -15,7 +15,6 @@ function EventsPage() {
   const [search,      setSearch]     = useState('');
   const [category,    setCategory]   = useState('All');
   const [dateFrom,    setDateFrom]   = useState('');
-  const [dateTo,      setDateTo]     = useState('');
 
   useEffect(() => {
     if (!memberData) return;
@@ -39,15 +38,14 @@ function EventsPage() {
       const catMatch   = category === 'All' || ev.category === category;
 
       let dateMatch = true;
-      if (dateFrom || dateTo) {
+      if (dateFrom) {
         const evDate = ev.date?.toDate ? ev.date.toDate() : new Date(ev.date);
-        if (dateFrom && evDate < new Date(dateFrom)) dateMatch = false;
-        if (dateTo   && evDate > new Date(dateTo + 'T23:59:59')) dateMatch = false;
+        if (evDate < new Date(dateFrom)) dateMatch = false;
       }
 
       return titleMatch && catMatch && dateMatch;
     });
-  }, [events, search, category, dateFrom, dateTo]);
+  }, [events, search, category, dateFrom]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -92,7 +90,7 @@ function EventsPage() {
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
 
-        {/* Date range */}
+        {/* Date from */}
         <input
           type="date"
           value={dateFrom}
@@ -100,18 +98,11 @@ function EventsPage() {
           className="bg-portal-bg border border-white/5 rounded-lg px-3 py-2 text-portal-muted
                      text-sm focus:outline-none focus:border-portal-gold/50 transition-colors"
         />
-        <input
-          type="date"
-          value={dateTo}
-          onChange={e => setDateTo(e.target.value)}
-          className="bg-portal-bg border border-white/5 rounded-lg px-3 py-2 text-portal-muted
-                     text-sm focus:outline-none focus:border-portal-gold/50 transition-colors"
-        />
 
         {/* Reset */}
-        {(search || category !== 'All' || dateFrom || dateTo) && (
+        {(search || category !== 'All' || dateFrom) && (
           <button
-            onClick={() => { setSearch(''); setCategory('All'); setDateFrom(''); setDateTo(''); }}
+            onClick={() => { setSearch(''); setCategory('All'); setDateFrom(''); }}
             className="text-portal-muted hover:text-portal-text text-sm px-3 py-2
                        border border-white/5 rounded-lg transition-colors"
           >

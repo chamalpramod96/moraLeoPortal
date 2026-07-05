@@ -2,8 +2,7 @@ import { useState, useEffect }         from 'react';
 import { Link }                         from 'react-router-dom';
 import { useAuth }                      from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
-import { getMemberManualPoints, calcEventPoints, calcManualPoints } from '../services/pointsService';
-import { getLevelInfo }                 from '../data/pointsConfig';
+import { getMemberManualPoints, calcEventPoints } from '../services/pointsService';
 import { useProfilePhoto }              from '../hooks/useProfilePhoto';
 import Badge                             from '../components/Badge';
 import LoadingSpinner                    from '../components/LoadingSpinner';
@@ -48,9 +47,6 @@ function DashboardPage() {
   const attendanceRate = calcAttendanceRate(attendedCount, events.length);
 
   const totalEventPts  = calcEventPoints(memberData?.email ?? '', attendance, events);
-  const totalManualPts = calcManualPoints(memberData?.email ?? '', manualPts);
-  const totalPoints    = totalEventPts + totalManualPts;
-  const { current: lvl, next: nextLvl, progressPct } = getLevelInfo(totalPoints);
 
   // Last 5 events with member status
   const recentEvents = events.slice(0, 5).map(ev => ({
@@ -117,7 +113,7 @@ function DashboardPage() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-portal-text flex items-center gap-2">
             <i className="fa-solid fa-trophy text-portal-gold" />
-            Mora Miglioria Points
+            Mora Connect Points
           </h2>
           <Link to="/points" className="text-portal-gold text-xs hover:text-portal-gold-light">
             View table <i className="fa-solid fa-arrow-right ml-1" />
@@ -125,56 +121,12 @@ function DashboardPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-          {/* Level badge + points */}
-          <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center
-                             border-2 flex-shrink-0
-                             ${lvl.border ?? lvl.borderClass ?? 'border-gray-600'}
-                             ${lvl.bg ?? lvl.bgClass}`}>
-              <i className={`fa-solid fa-star text-lg ${lvl.color ?? lvl.colorClass}`} />
-              <span className={`text-[10px] font-bold mt-0.5 ${lvl.color ?? lvl.colorClass}`}>
-                {lvl.label}
-              </span>
-            </div>
+        <div className="flex items-center gap-4">
             <div>
-              <p className="text-3xl font-bold text-portal-text">{totalPoints.toLocaleString()}</p>
-              <p className="text-xs text-portal-muted mt-0.5">
-                {totalEventPts.toLocaleString()} event pts
-                &nbsp;+&nbsp;
-                {totalManualPts.toLocaleString()} manual pts
-              </p>
-              {lvl.unlock && (
-                <p className="text-xs text-portal-gold mt-0.5">
-                  <i className="fa-solid fa-unlock mr-1" />{lvl.unlock}
-                </p>
-              )}
+              <p className="text-3xl font-bold text-portal-text">{totalEventPts.toLocaleString()}</p>
+              <p className="text-xs text-portal-muted mt-0.5">participation points</p>
             </div>
           </div>
-
-          {/* Progress to next level */}
-          {nextLvl && (
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between text-xs text-portal-muted mb-1.5">
-                <span>{lvl.label}</span>
-                <span className={nextLvl.color ?? nextLvl.colorClass}>{nextLvl.label}</span>
-              </div>
-              <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700
-                              ${(lvl.color ?? lvl.colorClass).replace('text-', 'bg-')}`}
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <p className="text-xs text-portal-muted mt-1">
-                {(nextLvl.minPoints - totalPoints).toLocaleString()} pts to {nextLvl.label}
-              </p>
-            </div>
-          )}
-          {!nextLvl && (
-            <p className="text-portal-gold text-sm font-semibold">
-              <i className="fa-solid fa-crown mr-1" />Maximum Level Achieved!
-            </p>
-          )}
         </div>
       </div>
 

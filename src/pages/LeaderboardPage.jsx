@@ -5,19 +5,7 @@ import LoadingSpinner                  from '../components/LoadingSpinner';
 import { getMembers }                  from '../services/memberService';
 import { getEvents, getMemberAttendance } from '../services/eventService';
 import { getAllManualPoints, computeMemberPoints } from '../services/pointsService';
-import { getLevelInfo }                from '../data/pointsConfig';
 import { initials }                    from '../utils/helpers';
-
-// ─── Level badge ──────────────────────────────────────────────────────────────
-function LevelBadge({ level }) {
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold
-                      ${level.border ?? level.borderClass ?? 'border-gray-600'}
-                      ${level.bg ?? level.bgClass} ${level.color ?? level.colorClass}`}>
-      <i className="fa-solid fa-star opacity-70 text-[10px]" />{level.label}
-    </span>
-  );
-}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function LeaderboardPage() {
@@ -85,7 +73,7 @@ export default function LeaderboardPage() {
             Leaderboard
           </h1>
           <p className="text-portal-muted text-sm mt-1">
-            All members ranked by total Mora Miglioria points
+            All members ranked by total Mora Connect points
           </p>
         </div>
         <input
@@ -98,12 +86,10 @@ export default function LeaderboardPage() {
       </div>
 
       {/* ── Stats bar ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {[
-          { label: 'Total Members',    val: rows.length,                                          icon: 'fa-users',       color: 'text-portal-gold'  },
-          { label: 'Highest Score',    val: (rows[0]?.total ?? 0).toLocaleString() + ' pts',      icon: 'fa-crown',       color: 'text-yellow-400'   },
-          { label: 'Average Score',    val: Math.round(rows.reduce((s, r) => s+r.total, 0) / (rows.length || 1)).toLocaleString() + ' pts', icon: 'fa-chart-line', color: 'text-blue-400' },
-          { label: 'Level 03+',        val: rows.filter(r => getLevelInfo(r.total).current.level >= 3).length, icon: 'fa-star', color: 'text-portal-red' },
+          { label: 'Total Members', val: rows.length,                                     icon: 'fa-users', color: 'text-portal-gold'  },
+          { label: 'Highest Score', val: (rows[0]?.eventPoints ?? 0).toLocaleString() + ' pts', icon: 'fa-crown', color: 'text-yellow-400' },
         ].map(s => (
           <div key={s.label} className="card p-4">
             <i className={`fa-solid ${s.icon} ${s.color} text-lg mb-1`} />
@@ -124,16 +110,12 @@ export default function LeaderboardPage() {
                 <tr className="border-b border-subtle bg-white/[0.03]">
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-wider text-portal-muted w-12">Rank</th>
                   <th className="px-4 py-3 text-left text-xs uppercase tracking-wider text-portal-muted">Member</th>
-                  <th className="px-4 py-3 text-center text-xs uppercase tracking-wider text-portal-muted">Level</th>
-                  <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted">Event Pts</th>
-                  <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted">Manual Pts</th>
-                  <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted">Total</th>
+                  <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted">Points</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-subtle">
                 {filtered.map((row, idx) => {
                   const rank = rows.indexOf(row) + 1;
-                  const { current } = getLevelInfo(row.total);
                   const m = row.member;
                   return (
                     <tr key={m.email}
@@ -151,18 +133,9 @@ export default function LeaderboardPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-center">
-                        <LevelBadge level={current} />
-                      </td>
-                      <td className="px-4 py-3.5 text-right text-portal-muted font-mono text-sm">
-                        {row.eventPoints.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3.5 text-right text-portal-muted font-mono text-sm">
-                        {row.manualPoints.toLocaleString()}
-                      </td>
                       <td className="px-4 py-3.5 text-right">
                         <span className="text-portal-gold font-bold font-mono text-base">
-                          {row.total.toLocaleString()}
+                          {row.eventPoints.toLocaleString()}
                         </span>
                       </td>
                     </tr>
