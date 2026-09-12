@@ -143,9 +143,19 @@ function MembersPage() {
   };
 
   // ── Save (add) ────────────────────────────────────────────────────────────
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleAdd = async (formData) => {
     if (!formData.email || !formData.password || !formData.fullName) {
       setFormError('Full Name, Email and Password are required.');
+      return;
+    }
+    if (!EMAIL_RE.test(formData.email.trim())) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+    if (formData.password.length < 6) {
+      setFormError('Password must be at least 6 characters.');
       return;
     }
     setSaving(true);

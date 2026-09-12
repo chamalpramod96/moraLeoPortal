@@ -37,7 +37,7 @@ function AddMemberForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={handleSubmit}>
       {formError && (
         <p className="text-red-400 text-sm bg-red-900/20 border border-red-600/30 rounded-lg px-3 py-2 mb-4">
           <i className="fa-solid fa-circle-exclamation mr-2" />{formError}

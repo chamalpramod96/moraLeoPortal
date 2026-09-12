@@ -6,7 +6,7 @@ import {
   initializeApp, getApps,
 } from 'firebase/app';
 import {
-  getAuth, createUserWithEmailAndPassword, signOut as fbSignOut,
+  getAuth, createUserWithEmailAndPassword, signOut as fbSignOut, deleteUser,
 } from 'firebase/auth';
 import { db, firebaseConfig } from './firebase';
 import { MOCK_MEMBERS } from '../data/mockData';
@@ -58,23 +58,29 @@ export async function createMember(memberData, password) {
     password,
   );
 
-  // 2. Sign out of secondary app immediately
-  await fbSignOut(secondaryAuth);
-
-  // 3. Persist member document
+  // 2. Persist member document. If this fails, roll back the Auth account
+  //    we just created so we never leave a login with no member record.
   const email = memberData.email.toLowerCase();
-  await setDoc(doc(db, 'members', email), {
-    memberId:     memberData.memberId     ?? '',
-    fullName:     memberData.fullName     ?? '',
-    email,
-    phone:        memberData.phone        ?? '',
-    role:         memberData.role         ?? 'member',
-    position:     memberData.position     ?? '',
-    term:         memberData.term         ?? '',
-    profilePhoto: memberData.profilePhoto ?? '',
-    isActive:     true,
-    joinDate:     serverTimestamp(),
-  });
+  try {
+    await setDoc(doc(db, 'members', email), {
+      memberId:     memberData.memberId     ?? '',
+      fullName:     memberData.fullName     ?? '',
+      email,
+      phone:        memberData.phone        ?? '',
+      role:         memberData.role         ?? 'member',
+      position:     memberData.position     ?? '',
+      term:         memberData.term         ?? '',
+      profilePhoto: memberData.profilePhoto ?? '',
+      isActive:     true,
+      joinDate:     serverTimestamp(),
+    });
+  } catch (err) {
+    await deleteUser(user).catch(() => { /* best-effort rollback */ });
+    throw err;
+  } finally {
+    // 3. Always sign out of the secondary app
+    await fbSignOut(secondaryAuth).catch(() => {});
+  }
 
   return user;
 }

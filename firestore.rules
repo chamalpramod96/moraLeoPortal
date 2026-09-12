@@ -37,10 +37,14 @@ service cloud.firestore {
       // Any admin can update, BUT:
       //   • cannot change a role TO superAdmin (unless they're superAdmin)
       //   • cannot change a role FROM superAdmin (unless they're superAdmin)
-      allow update: if isAdmin() && (
+      allow update: if (isAdmin() && (
         (resource.data.role != 'superAdmin' && request.resource.data.role != 'superAdmin') ||
         isSuperAdmin()
-      );
+      )) ||
+        // A member may update ONLY their own profilePhoto field — nothing else
+        // (role, isActive, email, etc. stay admin-only, preventing self-promotion).
+        (isAuthenticated() && request.auth.token.email == memberEmail &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profilePhoto']));
 
       // Only superAdmin can permanently delete a member account
       allow delete: if isSuperAdmin();

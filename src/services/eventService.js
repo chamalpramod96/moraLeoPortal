@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { MOCK_EVENTS, MOCK_ATTENDANCE } from '../data/mockData';
+import { deleteEventPhoto } from './storageService';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 
@@ -54,6 +55,10 @@ export async function updateEvent(eventId, updates) {
 
 export async function deleteEvent(eventId) {
   if (IS_DEMO) { console.info('[DEMO] deleteEvent — not persisted.'); return; }
+  // Grab photo URLs first so we can clean up Storage after the Firestore delete
+  const eventSnap = await getDoc(doc(db, 'events', eventId));
+  const photos    = eventSnap.exists() ? (eventSnap.data().photos ?? []) : [];
+
   // Cascade: delete all attendance records for this event first
   const attSnap = await getDocs(
     query(collection(db, 'attendance'), where('eventId', '==', eventId))
@@ -62,6 +67,10 @@ export async function deleteEvent(eventId) {
   attSnap.docs.forEach(d => batch.delete(d.ref));
   batch.delete(doc(db, 'events', eventId));
   await batch.commit();
+
+  // Best-effort Storage cleanup — a failed delete here shouldn't block the
+  // event from being removed (the Firestore state is already authoritative).
+  await Promise.all(photos.map(p => deleteEventPhoto(p?.url)));
 }
 
 // ─── Attendance ────────────────────────────────────────────────────────────
@@ -86,20 +95,19 @@ export async function getMemberAttendance(memberEmail) {
  */
 export async function saveEventAttendance(eventId, records, markedBy) {
   if (IS_DEMO) { console.info('[DEMO] saveEventAttendance — not persisted.'); return; }
-  // Delete existing records
   const existing = await getAttendanceForEvent(eventId);
-  await Promise.all(existing.map(a => deleteDoc(doc(db, 'attendance', a.id))));
 
-  // Write new records
-  await Promise.all(
-    records.map(r =>
-      addDoc(collection(db, 'attendance'), {
-        eventId,
-        memberId: r.memberId,
-        status:   r.status,
-        markedBy,
-        markedAt: serverTimestamp(),
-      }),
-    ),
-  );
+  // Single atomic batch: either every delete + write succeeds, or none do.
+  const batch = writeBatch(db);
+  existing.forEach(a => batch.delete(doc(db, 'attendance', a.id)));
+  records.forEach(r => {
+    batch.set(doc(collection(db, 'attendance')), {
+      eventId,
+      memberId: r.memberId,
+      status:   r.status,
+      markedBy,
+      markedAt: serverTimestamp(),
+    });
+  });
+  await batch.commit();
 }
