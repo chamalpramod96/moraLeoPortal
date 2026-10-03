@@ -16,7 +16,7 @@ function LoadingSpinner({ fullScreen = false, size = 'md', label = 'Loading…' 
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-portal-bg flex flex-col items-center justify-center z-50 gap-4">
+      <div className="fixed inset-0 bg-portal-gold flex flex-col items-center justify-center z-50 gap-4">
         {spinner}
         <span className="text-portal-muted text-sm">{label}</span>
       </div>

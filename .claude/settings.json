@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"dev server: HTTP %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(firebase --version)",
+      "Bash(firebase projects:list)",
+      "Bash(java -version)",
+      "Bash(firebase deploy *)",
+      "Bash(gcloud auth *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(gh run *)",
+      "WebFetch(domain:github.com)",
+      "Bash(ls \"C:\\\\LeoProject\")",
+      "Read(//c/LeoProject/**)",
+      "Bash(npx create-expo-app@latest moraLeoMobile --template blank-typescript)",
+      "Read(//c/LeoProject/moraLeoMobile/**)",
+      "Bash(npx expo *)",
+      "Bash(npx tsc *)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/@expo/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/firebase/auth/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/firebase/**)",
+      "Bash(grep -A 3 '\"\\\\./auth' \"C:\\\\LeoProject\\\\moraLeoMobile\\\\node_modules\\\\firebase\\\\package.json\" | head -60 *)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/@firebase/auth/dist/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/@firebase/auth/dist/auth/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/@firebase/auth/**)",
+      "Bash(cat \"C:\\\\LeoProject\\\\moraLeoMobile\\\\node_modules\\\\expo\\\\tsconfig.base.json\" 2>/dev/null)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/expo/**)",
+      "Bash(grep -A 30 '\"exports\"' \"C:\\\\LeoProject\\\\moraLeoMobile\\\\node_modules\\\\@firebase\\\\auth\\\\package.json\" | head -40)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/nativewind/**)",
+      "Bash(xargs grep -l \"css\")",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/nativewind/dist/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/expo-status-bar/build/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/nativewind/dist/metro/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/expo-status-bar/**)",
+      "Read(//c/LeoProject/moraLeoMobile/node_modules/react-native-css-interop/**)",
+      "Bash(grep -A1 '\"@expo/vector-icons\"' \"C:\\\\LeoProject\\\\moraLeoMobile\\\\node_modules\\\\expo\\\\package.json\")",
+      "Bash(mkdir -p \"C:\\\\LeoProject\\\\moraLeoMobile\\\\.claude\\\\skills\\\\moraleoportal-web-reference\")"
+    ],
+    "additionalDirectories": [
+      "C:\\LeoProject\\moraLeoMobile",
+      "C:\\LeoProject\\moraLeoMobile\\.claude\\skills"
+    ]
+  }
+}
