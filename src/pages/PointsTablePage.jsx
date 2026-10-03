@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth }                from '../context/AuthContext';
 import LoadingSpinner             from '../components/LoadingSpinner';
-import { EVENT_POINT_CATEGORIES } from '../data/pointsConfig';
-import { calcEventPoints } from '../services/pointsService';
-import { getMemberAttendance } from '../services/eventService';
-import { getEvents }           from '../services/eventService';
+import { EVENT_POINT_CATEGORIES, MANUAL_POINT_CATEGORIES, LEVELS, getLevelInfo } from '../data/pointsConfig';
+import { computeMemberPoints, getMemberManualPoints } from '../services/pointsService';
+import { getMemberAttendance, getEvents }              from '../services/eventService';
 
 // ─── Section accordion ────────────────────────────────────────────────────────
 function Section({ title, icon, children, defaultOpen = false }) {
@@ -61,23 +60,44 @@ function PointsGroup({ categories }) {
   );
 }
 
+// ─── Level ladder ──────────────────────────────────────────────────────────────
+function LevelLadder({ currentLevel }) {
+  return (
+    <div className="space-y-2">
+      {LEVELS.map(lvl => (
+        <div
+          key={lvl.level}
+          className={`flex items-center justify-between px-3 py-2 rounded-lg border ${lvl.border} ${lvl.bg}
+                      ${lvl.level === currentLevel ? 'ring-1 ring-portal-gold' : ''}`}
+        >
+          <div>
+            <span className={`font-semibold text-sm ${lvl.color}`}>{lvl.label}</span>
+            {lvl.unlock && <span className="text-portal-muted text-xs ml-2">— {lvl.unlock}</span>}
+          </div>
+          <span className="text-portal-muted text-xs font-mono">{lvl.minPoints.toLocaleString()}+ pts</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PointsTablePage() {
   const { memberData } = useAuth();
 
-  const [loading,  setLoading]  = useState(true);
-  const [eventPts, setEventPts] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [totals,  setTotals]  = useState({ eventPoints: 0, manualPoints: 0, total: 0 });
 
   useEffect(() => {
     if (!memberData?.email) { setLoading(false); return; }
     (async () => {
       try {
-        const [att, events] = await Promise.all([
+        const [att, events, manualPts] = await Promise.all([
           getMemberAttendance(memberData.email),
           getEvents(),
+          getMemberManualPoints(memberData.email),
         ]);
-        const ep = calcEventPoints(memberData.email, att, events);
-        setEventPts(ep);
+        setTotals(computeMemberPoints(memberData.email, att, events, manualPts));
       } finally {
         setLoading(false);
       }
@@ -85,6 +105,9 @@ export default function PointsTablePage() {
   }, [memberData?.email]);
 
   if (loading) return <LoadingSpinner fullScreen />;
+
+  const { eventPoints, manualPoints, total } = totals;
+  const { current, next, progressPct } = getLevelInfo(total);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
@@ -101,13 +124,51 @@ export default function PointsTablePage() {
       </div>
 
       {/* ── Personal progress card ── */}
-      <div className="card-gold p-6">
-        <p className="text-portal-muted text-xs uppercase tracking-widest mb-2">Your Points</p>
-        <p className="text-4xl font-bold text-portal-text">
-          {eventPts.toLocaleString()}
-          <span className="text-portal-muted text-base font-normal ml-2">pts</span>
-        </p>
+      <div className="card-gold p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <p className="text-portal-muted text-xs uppercase tracking-widest mb-2">Your Total Points</p>
+            <p className="text-4xl font-bold text-portal-text">
+              {total.toLocaleString()}
+              <span className="text-portal-muted text-base font-normal ml-2">pts</span>
+            </p>
+            <div className="flex gap-4 mt-2 text-xs text-portal-muted">
+              <span>Participation: <strong className="text-portal-text">{eventPoints.toLocaleString()}</strong></span>
+              <span>Manual / Achievements: <strong className="text-portal-text">{manualPoints.toLocaleString()}</strong></span>
+            </div>
+          </div>
+
+          <div className={`px-4 py-2 rounded-lg border ${current.border} ${current.bg} text-center sm:text-right flex-shrink-0`}>
+            <p className={`text-sm font-bold ${current.color}`}>{current.label}</p>
+            {current.unlock && <p className="text-portal-muted text-[11px] mt-0.5">{current.unlock}</p>}
+          </div>
+        </div>
+
+        {/* Progress bar to next level */}
+        {next ? (
+          <div>
+            <div className="flex justify-between text-xs text-portal-muted mb-1">
+              <span>{current.label}</span>
+              <span>{(next.minPoints - total).toLocaleString()} pts to {next.label}</span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+              <div className="h-full rounded-full bg-portal-gold transition-all" style={{ width: `${progressPct}%` }} />
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-portal-gold font-semibold">
+            <i className="fa-solid fa-crown mr-1" /> Maximum level reached — Leo Legend!
+          </p>
+        )}
       </div>
+
+      {/* ── Level progression ── */}
+      <Section title="Level Progression" icon="fa-layer-group">
+        <p className="text-sm text-portal-muted mb-4">
+          Your level is based on <strong>total points</strong> (participation + manual/achievement points combined).
+        </p>
+        <LevelLadder currentLevel={current.level} />
+      </Section>
 
       {/* ── Participation (event-based) points ── */}
       <Section title="Participation Points — Events & Meetings" icon="fa-calendar-check">
@@ -116,6 +177,15 @@ export default function PointsTablePage() {
           <span className="text-green-400 font-semibold"> Attended</span> for an event.
         </p>
         <PointsGroup categories={EVENT_POINT_CATEGORIES} />
+      </Section>
+
+      {/* ── Manual / involvement points ── */}
+      <Section title="Involvement, Achievement & Growth Points" icon="fa-award">
+        <p className="text-sm text-portal-muted mb-4">
+          These points are awarded manually by the Secretary for roles, involvements, achievements,
+          membership growth, and newsletter contributions — they don't come from event attendance.
+        </p>
+        <PointsGroup categories={MANUAL_POINT_CATEGORIES} />
       </Section>
 
     </div>

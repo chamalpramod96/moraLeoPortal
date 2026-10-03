@@ -50,7 +50,9 @@ export async function updateEvent(eventId, updates) {
   const payload = { ...updates };
   if (updates.date && typeof updates.date === 'string') {
     payload.date = Timestamp.fromDate(new Date(updates.date + 'T00:00:00'));
-  }  if (updates.pointsValue !== undefined) payload.pointsValue = Number(updates.pointsValue);  await updateDoc(doc(db, 'events', eventId), payload);
+  }
+  if (updates.pointsValue !== undefined) payload.pointsValue = Number(updates.pointsValue);
+  await updateDoc(doc(db, 'events', eventId), payload);
 }
 
 export async function deleteEvent(eventId) {

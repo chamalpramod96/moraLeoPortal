@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { getManualCategory } from '../../data/pointsConfig';
 
 const EMPTY_FORM = {
   memberId: '', fullName: '', email: '', phone: '',

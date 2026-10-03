@@ -71,7 +71,7 @@ function MembersPage() {
     if (!pointsForm.categoryId) { showToast('Please select a category.', 'error'); return; }
     const cat = getManualCategory(pointsForm.categoryId);
     const pts = cat?.id === 'manual' ? Number(pointsForm.points) : cat?.points ?? 0;
-    if (!pts || pts < 0) { showToast('Enter a valid points value.', 'error'); return; }
+    if (Number.isNaN(pts) || pts < 0) { showToast('Enter a valid points value.', 'error'); return; }
     setPointsSaving(true);
     try {
       await addManualPoints({
@@ -406,7 +406,7 @@ function MembersPage() {
                 <div>
                   <label className="block text-xs text-portal-muted mb-1">Points *</label>
                   <input
-                    type="number" min="1"
+                    type="number" min="0"
                     value={pointsForm.points}
                     onChange={e => setPointsForm(f => ({ ...f, points: e.target.value }))}
                     required

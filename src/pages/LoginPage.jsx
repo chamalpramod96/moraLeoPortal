@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate }         from 'react-router-dom';
 import { useAuth }             from '../context/AuthContext';
 import logo from '../assets/47n.png';
-const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+
 function LoginPage() {
   const [email,        setEmail]        = useState('');
   const [password,     setPassword]     = useState('');
@@ -63,36 +63,6 @@ function LoginPage() {
                             text-red-400 text-sm flex items-start gap-2">
               <i className="fa-solid fa-circle-exclamation mt-0.5 flex-shrink-0" />
               <span>{authError}</span>
-            </div>
-          )}
-
-          {/* Demo credentials panel */}
-          {IS_DEMO && (
-            <div className="mb-5 p-4 bg-portal-gold/8 border border-portal-gold/30 rounded-lg">
-              <p className="text-portal-gold text-xs font-semibold mb-3 flex items-center gap-2">
-                <i className="fa-solid fa-flask-vial" />
-                Demo Mode — click an account to fill in credentials
-              </p>
-              <div className="space-y-2">
-                {DEMO_ACCOUNTS.map(acc => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => { setEmail(acc.email); setPassword('demo1234'); setAuthError(null); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg
-                               bg-portal-bg border border-white/5 hover:border-portal-gold/30
-                               transition-colors text-left group"
-                  >
-                    <span>
-                      <span className="text-portal-gold text-xs font-medium block">{acc.email}</span>
-                      <span className="text-portal-muted text-xs">{acc.label}</span>
-                    </span>
-                    <span className="text-portal-muted text-xs font-mono group-hover:text-portal-gold transition-colors">
-                      demo1234
-                    </span>
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 
