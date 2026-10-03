@@ -31,7 +31,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-portal-gold flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-portal-bg flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Ambient glow decorations */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-64
                       bg-portal-red/5 rounded-full blur-3xl pointer-events-none" />
