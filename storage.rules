@@ -58,6 +58,22 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    // ── Orientation Program files ───────────────────────────────────────────
+    // Path: orientation/{fileId}/{fileName}
+    // • Any active member can READ
+    // • Only admins can upload (documents, images, MP4; max 25 MB) or DELETE
+    //   — keep the type list in sync with ORIENTATION_TYPES in orientationService.js
+    match /orientation/{fileId}/{fileName} {
+      allow read:   if isActiveMember();
+      allow write:  if isAdmin()
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType.matches(
+             'application/pdf|application/msword|application/vnd[.]ms-(powerpoint|excel)' +
+             '|application/vnd[.]openxmlformats-officedocument[.](wordprocessingml[.]document|presentationml[.]presentation|spreadsheetml[.]sheet)' +
+             '|image/(jpeg|png|webp)|video/mp4');
+      allow delete: if isAdmin();
+    }
+
     // Deny everything else
     match /{allPaths=**} {
       allow read, write: if false;

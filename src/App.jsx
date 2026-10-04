@@ -14,6 +14,7 @@ import AdminEventsPage    from './pages/admin/AdminEventsPage';
 import AttendancePage     from './pages/admin/AttendancePage';
 import PointsTablePage   from './pages/PointsTablePage';
 import LeaderboardPage   from './pages/LeaderboardPage';
+import OrientationPage   from './pages/OrientationPage';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
               <Route path="profile"   element={<ProfilePage />} />
               <Route path="events"    element={<EventsPage />} />
               <Route path="points"    element={<PointsTablePage />} />
+              <Route path="orientation" element={<OrientationPage />} />
 
               {/* Secretary-only */}
               <Route

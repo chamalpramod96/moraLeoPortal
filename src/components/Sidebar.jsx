@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { to: '/profile',             label: 'My Profile',    icon: 'fa-user'          },
   { to: '/events',              label: 'Events',        icon: 'fa-calendar-days' },
   { to: '/points',              label: 'Points Table',  icon: 'fa-trophy'        },
+  { to: '/orientation',         label: 'Orientation Program', icon: 'fa-book-open' },
 ];
 
 const ADMIN_LINKS = [
