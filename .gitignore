@@ -18,6 +18,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+firebase-debug.log*
+ui-debug.log
+
+# ── Firebase local cache ──────────────────────────────────────────────────────
+.firebase/
 
 # ── Editor / OS ───────────────────────────────────────────────────────────────
 .DS_Store
