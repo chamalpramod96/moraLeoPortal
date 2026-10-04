@@ -34,6 +34,20 @@ export async function uploadProfilePhoto(email, file) {
 }
 
 /**
+ * Delete a member's profile photo (best-effort; fine if they never had one).
+ */
+export async function deleteProfilePhoto(email) {
+  if (IS_DEMO) return;
+  try {
+    await deleteObject(ref(storage, `profiles/${email.toLowerCase()}/photo`));
+  } catch (err) {
+    if (err.code !== 'storage/object-not-found') {
+      console.warn('[storageService] deleteProfilePhoto skipped:', err.code);
+    }
+  }
+}
+
+/**
  * Delete a photo from Firebase Storage by its download URL.
  * Safe to call in demo mode (no-op).
  */

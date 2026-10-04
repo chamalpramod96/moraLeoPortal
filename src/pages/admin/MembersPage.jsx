@@ -2,8 +2,10 @@ import { useState, useMemo, useEffect }  from 'react';
 import { useAuth }            from '../../context/AuthContext';
 import { useMembers }         from '../../hooks/useMembers';
 import {
-  createMember, updateMember, toggleMemberStatus, sendSetPasswordEmail,
+  createMember, updateMember, toggleMemberStatus, sendSetPasswordEmail, removeMember,
 } from '../../services/memberService';
+import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { auth }               from '../../services/firebase';
 import {
   getMemberManualPoints, addManualPoints, deleteManualPoints,
 } from '../../services/pointsService';
@@ -168,7 +170,8 @@ function MembersPage() {
     } catch (err) {
       setFormError(
         err.code === 'auth/email-already-in-use'
-          ? 'An account with this email already exists.'
+          ? 'This email still has a login (for example a removed member). Delete it in ' +
+            'Firebase Console → Authentication → Users, then add the member again.'
           : err.message || 'Failed to create member.',
       );
     } finally {
@@ -207,22 +210,56 @@ function MembersPage() {
     }
   };
 
-  // ── Toggle active ─────────────────────────────────────────────────────────
-  const handleToggleStatus = async () => {
-    const { member, action } = confirm;
+  // ── Reactivate (members deactivated before "Remove" replaced deactivation) ──
+  const handleReactivate = async () => {
+    const { member } = confirm;
     try {
-      await toggleMemberStatus(member.email, action === 'activate');
-      showToast(
-        action === 'activate'
-          ? `${member.fullName} reactivated.`
-          : `${member.fullName} deactivated.`,
-        'success',
-      );
+      await toggleMemberStatus(member.email, true);
+      showToast(`${member.fullName} reactivated.`, 'success');
       refetch();
     } catch {
       showToast('Action failed. Please try again.', 'error');
     } finally {
       setConfirm(null);
+    }
+  };
+
+  // ── Remove permanently (Super Admin, password-confirmed) ─────────────────
+  const [removeItem, setRemoveItem] = useState(null);   // member object
+  const [rmPassword, setRmPassword] = useState('');
+  const [rmError,    setRmError]    = useState('');
+  const [rmBusy,     setRmBusy]     = useState(false);
+
+  const openRemove = (m) => {
+    setRemoveItem(m);
+    setRmPassword('');
+    setRmError('');
+  };
+
+  const handleRemoveConfirm = async (e) => {
+    e.preventDefault();
+    if (!rmPassword.trim()) { setRmError('Please enter your password.'); return; }
+    setRmBusy(true);
+    setRmError('');
+    try {
+      await reauthenticateWithCredential(
+        auth.currentUser, EmailAuthProvider.credential(me.email, rmPassword),
+      );
+    } catch (err) {
+      const wrong = err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential';
+      setRmError(wrong ? 'Incorrect password. Try again.' : 'Could not verify your password. Please try again.');
+      setRmBusy(false);
+      return;
+    }
+    try {
+      await removeMember(removeItem.email);
+      showToast(`${removeItem.fullName} was removed permanently.`, 'success');
+      setRemoveItem(null);
+      refetch();
+    } catch {
+      setRmError('Remove failed part-way. Please try again — it continues where it stopped.');
+    } finally {
+      setRmBusy(false);
     }
   };
 
@@ -330,19 +367,16 @@ function MembersPage() {
                             <i className={`fa-solid ${inviting === m.email ? 'fa-spinner fa-spin' : 'fa-envelope'}`} />
                           </button>
                         )}
-                        {m.email !== me?.email && (
-                          <button
-                            onClick={() => setConfirm({
-                              member: m,
-                              action: m.isActive ? 'deactivate' : 'activate',
-                            })}
-                            title={m.isActive ? 'Deactivate' : 'Activate'}
-                            className={`transition-colors p-1
-                                        ${m.isActive
-                                          ? 'text-portal-muted hover:text-red-400'
-                                          : 'text-portal-muted hover:text-green-400'}`}
-                          >
-                            <i className={`fa-solid ${m.isActive ? 'fa-user-slash' : 'fa-user-check'}`} />
+                        {!m.isActive && m.email !== me?.email && (
+                          <button onClick={() => setConfirm({ member: m })} title="Reactivate"
+                            className="text-portal-muted hover:text-green-400 transition-colors p-1">
+                            <i className="fa-solid fa-user-check" />
+                          </button>
+                        )}
+                        {isSuperAdmin && m.email !== me?.email && (
+                          <button onClick={() => openRemove(m)} title="Remove member permanently"
+                            className="text-portal-muted hover:text-red-400 transition-colors p-1">
+                            <i className="fa-solid fa-user-xmark" />
                           </button>
                         )}
                       </div>
@@ -506,20 +540,80 @@ function MembersPage() {
         )}
       </Modal>
 
-      {/* Confirm deactivate/activate */}
+      {/* Confirm reactivate */}
       <ConfirmDialog
         isOpen={!!confirm}
-        isDanger={confirm?.action === 'deactivate'}
-        title={confirm?.action === 'deactivate' ? 'Deactivate Member' : 'Reactivate Member'}
-        message={
-          confirm?.action === 'deactivate'
-            ? `Deactivate ${confirm?.member?.fullName}? They will lose portal access.`
-            : `Reactivate ${confirm?.member?.fullName}? They will regain portal access.`
-        }
-        confirmText={confirm?.action === 'deactivate' ? 'Deactivate' : 'Reactivate'}
-        onConfirm={handleToggleStatus}
+        title="Reactivate Member"
+        message={`Reactivate ${confirm?.member?.fullName}? They will regain portal access.`}
+        confirmText="Reactivate"
+        onConfirm={handleReactivate}
         onCancel={() => setConfirm(null)}
       />
+
+      {/* Remove permanently — password-protected */}
+      <Modal isOpen={!!removeItem} onClose={() => !rmBusy && setRemoveItem(null)} title="Remove Member" size="sm">
+        <form onSubmit={handleRemoveConfirm} className="space-y-4">
+          <div className="flex gap-3 bg-red-950/50 border border-red-700/40 rounded-lg px-4 py-3">
+            <i className="fa-solid fa-triangle-exclamation text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-portal-text space-y-1.5">
+              <p>
+                Permanently remove <span className="font-semibold text-portal-gold">{removeItem?.fullName}</span>
+                {' '}<span className="text-portal-muted">({removeItem?.email})</span>?
+              </p>
+              <p className="text-portal-muted text-xs">
+                Their member record, all attendance records, points history and profile photo
+                will be deleted. <strong className="text-red-400">This cannot be undone.</strong>
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-portal-muted mb-1">
+              Enter your password to confirm
+            </label>
+            <input
+              type="password"
+              autoFocus
+              value={rmPassword}
+              onChange={e => { setRmPassword(e.target.value); setRmError(''); }}
+              placeholder="Your account password"
+              autoComplete="current-password"
+              className="w-full bg-portal-bg border border-white/10 rounded-lg px-3 py-2
+                         text-portal-text text-sm focus:outline-none focus:border-red-500/60
+                         placeholder:text-portal-muted/50"
+            />
+            {rmError && (
+              <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                <i className="fa-solid fa-circle-exclamation" />{rmError}
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-1">
+            <button
+              type="button"
+              disabled={rmBusy}
+              onClick={() => setRemoveItem(null)}
+              className="px-4 py-2 rounded-lg text-sm text-portal-muted hover:text-portal-text
+                         border border-white/10 hover:border-white/20 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={rmBusy}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-700 hover:bg-red-600
+                         text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors
+                         flex items-center gap-2"
+            >
+              {rmBusy
+                ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Removing…</>
+                : <><i className="fa-solid fa-user-xmark" />Remove Permanently</>
+              }
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -21,6 +21,10 @@ service firebase.storage {
         callerMember().role in ['secretary', 'president', 'superAdmin'];
     }
 
+    function isSuperAdmin() {
+      return isActiveMember() && callerMember().role == 'superAdmin';
+    }
+
     // Photo formats only — no SVG (it can carry script) or other image/* types
     function isPhoto() {
       return request.resource.contentType.matches('image/(jpeg|png|webp|gif|heic|heif)');
@@ -31,12 +35,14 @@ service firebase.storage {
     // • Any active member can READ (needed to display in portal, Word doc)
     // • Members can WRITE their own photo; admins can write any member's photo
     // • Max file size: 5 MB — enforced by rule
+    // • Only superAdmin can DELETE (part of permanently removing a member)
     match /profiles/{email}/photo {
       allow read:  if isActiveMember();
       allow write: if isActiveMember()
         && request.resource.size  < 5 * 1024 * 1024      // 5 MB max
         && isPhoto()
         && (request.auth.token.email == email || isAdmin());
+      allow delete: if isSuperAdmin();
     }
 
     // ── Event photos ─────────────────────────────────────────────────────────

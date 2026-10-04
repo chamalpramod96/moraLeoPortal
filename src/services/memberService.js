@@ -1,6 +1,6 @@
 import {
-  collection, doc, getDocs, getDoc,
-  setDoc, updateDoc, serverTimestamp, query, orderBy,
+  collection, doc, getDocs, getDoc, deleteDoc, writeBatch,
+  setDoc, updateDoc, serverTimestamp, query, where, orderBy,
 } from 'firebase/firestore';
 import {
   initializeApp, getApps,
@@ -10,6 +10,7 @@ import {
   sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth, db, firebaseConfig } from './firebase';
+import { deleteProfilePhoto } from './storageService';
 import { MOCK_MEMBERS } from '../data/mockData';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
@@ -71,9 +72,19 @@ export async function createMember(memberData) {
     console.info('[DEMO] createMember called — changes are not saved in demo mode.');
     return { inviteSent: true };
   }
+  // Never overwrite an existing member record
+  if ((await getDoc(doc(db, 'members', memberData.email.toLowerCase()))).exists()) {
+    const err = new Error('A member with this email already exists.');
+    err.code  = 'member-exists';
+    throw err;
+  }
+
   const secondaryAuth = getSecondaryAuth();
 
-  // 1. Create Auth account
+  // 1. Create Auth account. If the email already has a login (e.g. a removed
+  //    member — the browser can't delete logins), this fails on purpose rather
+  //    than reusing it: anyone can register a login for any email, so reusing
+  //    one could hand the member's access to whoever created it.
   const { user } = await createUserWithEmailAndPassword(
     secondaryAuth,
     memberData.email.toLowerCase(),
@@ -126,4 +137,34 @@ export async function updateMember(email, updates) {
 export async function toggleMemberStatus(email, isActive) {
   if (IS_DEMO) { console.info('[DEMO] toggleMemberStatus — not persisted.'); return; }
   await updateDoc(doc(db, 'members', email.toLowerCase()), { isActive });
+}
+
+// ─── Remove ────────────────────────────────────────────────────────────────
+
+/**
+ * Permanently removes a member: their attendance records, manual points,
+ * member record and profile photo. Super Admin only (enforced by the rules).
+ *
+ * Their Firebase Auth login can't be deleted from the browser on the free
+ * plan. Without a member record it has no access (rules + app sign-out); to
+ * re-add the same email later, delete the login in Firebase Console first.
+ */
+export async function removeMember(email) {
+  if (IS_DEMO) { console.info('[DEMO] removeMember — not persisted.'); return; }
+  const id = email.toLowerCase();
+  const [att, pts] = await Promise.all([
+    getDocs(query(collection(db, 'attendance'),   where('memberId', '==', id))),
+    getDocs(query(collection(db, 'memberPoints'), where('memberId', '==', id))),
+  ]);
+
+  // Records first, member record last: if anything fails part-way the member
+  // still exists and Remove can simply be run again. (Batches max 500 writes.)
+  const refs = [...att.docs, ...pts.docs].map(d => d.ref);
+  for (let i = 0; i < refs.length; i += 450) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + 450).forEach(r => batch.delete(r));
+    await batch.commit();
+  }
+  await deleteDoc(doc(db, 'members', id));
+  await deleteProfilePhoto(id);
 }

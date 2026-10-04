@@ -58,8 +58,9 @@ service cloud.firestore {
          (request.resource.data.profilePhoto == '' ||
           request.resource.data.profilePhoto.matches('https://firebasestorage[.]googleapis[.]com/.*')));
 
-      // Only superAdmin can permanently delete a member account
-      allow delete: if isSuperAdmin();
+      // Only superAdmin can permanently remove a member — and not themselves,
+      // so the club can't be left without a Super Admin by accident
+      allow delete: if isSuperAdmin() && request.auth.token.email != memberEmail;
     }
 
     // ── Events ───────────────────────────────────────────────────────────────
