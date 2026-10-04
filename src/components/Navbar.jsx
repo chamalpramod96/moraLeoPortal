@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth }      from '../context/AuthContext';
-import logo from '../assets/47n.png';
+import logo from '../assets/47OfficialLogo-web.png';
 
 /**
  * Top navigation bar.

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/47n.png';
+import logo from '../assets/47OfficialLogo-web.png';
 
 const NAV_LINKS = [
   { to: '/dashboard',           label: 'Dashboard',     icon: 'fa-gauge-high'    },

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import logo from '../assets/47n.png';
+import logo from '../assets/47OfficialLogo-web.png';
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
