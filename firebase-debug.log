@@ -1,0 +1,144 @@
+[debug] [2026-10-04T07:09:08.540Z] ----------------------------------------------------------------------
+[debug] [2026-10-04T07:09:08.542Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Chamal Pramod\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init hosting
+[debug] [2026-10-04T07:09:08.542Z] CLI Version:   15.22.4
+[debug] [2026-10-04T07:09:08.543Z] Platform:      win32
+[debug] [2026-10-04T07:09:08.543Z] Node Version:  v22.16.0
+[debug] [2026-10-04T07:09:08.543Z] Detected Agent: unknown
+[debug] [2026-10-04T07:09:08.543Z] Time:          Sun Oct 04 2026 12:39:08 GMT+0530 (India Standard Time)
+[debug] [2026-10-04T07:09:08.543Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\LeoProject\moraLeoPortal\moraLeoPortal
+
+Before we get started, keep in mind:
+
+  * You are currently outside your home directory
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-10-04T07:09:58.273Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-04T07:09:58.274Z] > authorizing via signed-in user (chamalps21@gmail.com)
+[debug] [2026-10-04T07:09:58.275Z] Checked if tokens are valid: false, expires at: 1791097434017
+[debug] [2026-10-04T07:09:58.275Z] Checked if tokens are valid: false, expires at: 1791097434017
+[debug] [2026-10-04T07:09:58.275Z] > refreshing access token with scopes: []
+[debug] [2026-10-04T07:09:58.277Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-10-04T07:09:58.277Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-04T07:09:58.687Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-10-04T07:09:58.687Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-04T07:09:58.699Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/moraleoportal [none]
+[debug] [2026-10-04T07:09:59.553Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/moraleoportal 200
+[debug] [2026-10-04T07:09:59.553Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/moraleoportal {"projectId":"moraleoportal","projectNumber":"598095824768","displayName":"moraLeoPortal","name":"projects/moraleoportal","resources":{"hostingSite":"moraleoportal"},"state":"ACTIVE","labels":{"firebase":"enabled","firebase/storage-default-bucket":"created"},"etag":"1_30450983-6cca-4c58-8b2e-22f25e23cd3f"}
+[info] i  Using project moraleoportal (moraLeoPortal) . 
+[info] 
+=== Hosting Setup
+[debug] [2026-10-04T07:10:26.294Z] Checked if tokens are valid: true, expires at: 1791101397687
+[debug] [2026-10-04T07:10:26.294Z] Checked if tokens are valid: true, expires at: 1791101397687
+[debug] [2026-10-04T07:10:26.295Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/moraleoportal [none]
+[debug] [2026-10-04T07:10:26.896Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/moraleoportal 200
+[debug] [2026-10-04T07:10:26.896Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/moraleoportal {"projectId":"moraleoportal","projectNumber":"598095824768","displayName":"moraLeoPortal","name":"projects/moraleoportal","resources":{"hostingSite":"moraleoportal"},"state":"ACTIVE","labels":{"firebase":"enabled","firebase/storage-default-bucket":"created"},"etag":"1_30450983-6cca-4c58-8b2e-22f25e23cd3f"}
+[info] 
+[info] Your public directory is the folder (relative to your project directory) that
+[info] will contain Hosting assets to be uploaded with firebase deploy. If you
+[info] have a build process for your assets, use your build's output directory.
+[info] 
+[info] 
+[info] i  Detected a .git folder at C:\LeoProject\moraLeoPortal\moraLeoPortal 
+[info] i  Authorizing with GitHub to upload your service account to a GitHub repository's secrets store. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://github.com/login/oauth/authorize?client_id=89cf50f02ac6aaed3484&state=149653952&redirect_uri=http%3A%2F%2Flocalhost%3A9005&scope=read%3Auser%20repo%20public_repo
+[info] 
+[info] Waiting for authentication...
+[debug] [2026-10-04T07:11:09.532Z] >>> [apiv2][query] POST https://github.com/login/oauth/access_token [none]
+[debug] [2026-10-04T07:11:09.532Z] >>> [apiv2][body] POST https://github.com/login/oauth/access_token [stream]
+[debug] [2026-10-04T07:11:10.334Z] <<< [apiv2][status] POST https://github.com/login/oauth/access_token 200
+[debug] [2026-10-04T07:11:10.334Z] <<< [apiv2][body] POST https://github.com/login/oauth/access_token {"access_token":"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","token_type":"bearer","scope":"read:user,repo"}
+[debug] [2026-10-04T07:11:10.343Z] >>> [apiv2][query] GET https://api.github.com/user [none]
+[debug] [2026-10-04T07:11:11.132Z] <<< [apiv2][status] GET https://api.github.com/user 200
+[debug] [2026-10-04T07:11:11.133Z] <<< [apiv2][body] GET https://api.github.com/user {"login":"chamalpramod96","id":43033924,"node_id":"MDQ6VXNlcjQzMDMzOTI0","avatar_url":"https://avatars.githubusercontent.com/u/43033924?v=4","gravatar_id":"","url":"https://api.github.com/users/chamalpramod96","html_url":"https://github.com/chamalpramod96","followers_url":"https://api.github.com/users/chamalpramod96/followers","following_url":"https://api.github.com/users/chamalpramod96/following{/other_user}","gists_url":"https://api.github.com/users/chamalpramod96/gists{/gist_id}","starred_url":"https://api.github.com/users/chamalpramod96/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/chamalpramod96/subscriptions","organizations_url":"https://api.github.com/users/chamalpramod96/orgs","repos_url":"https://api.github.com/users/chamalpramod96/repos","events_url":"https://api.github.com/users/chamalpramod96/events{/privacy}","received_events_url":"https://api.github.com/users/chamalpramod96/received_events","type":"User","user_view_type":"private","site_admin":false,"name":"Chamal pramod ","company":null,"blog":"https://github.com/chamalpramod96","location":"Colombo","email":null,"hireable":null,"bio":"     ANYTHING IS POSSIBLE IF YOU BELIEVE! \r\n                           ","twitter_username":null,"notification_email":null,"public_repos":16,"public_gists":0,"followers":27,"following":59,"created_at":"2018-09-06T11:01:12Z","updated_at":"2026-10-03T22:01:03Z","private_gists":0,"total_private_repos":25,"owned_private_repos":25,"disk_usage":273484,"collaborators":0,"two_factor_authentication":true,"plan":{"name":"pro","space":976562499,"collaborators":0,"private_repos":9999}}
+[info] 
+[info] +  Success! Logged into GitHub as chamalpramod96 
+[info] 
+[debug] [2026-10-04T07:11:16.101Z] >>> [apiv2][query] GET https://api.github.com/repos//actions/secrets/public-key type=owner
+[debug] [2026-10-04T07:11:16.460Z] <<< [apiv2][status] GET https://api.github.com/repos//actions/secrets/public-key 404
+[debug] [2026-10-04T07:11:16.461Z] <<< [apiv2][body] GET https://api.github.com/repos//actions/secrets/public-key {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[info] 
+[info] 
+[error] !  The provided authorization cannot be used with this repository. If this repository is in an organization, did you remember to grant access? 
+[info] 
+[info] i  Action required: Visit this URL to ensure access has been granted to the appropriate organization(s) for the Firebase CLI GitHub OAuth App: 
+[info] https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+[info] 
+[debug] [2026-10-04T07:12:07.941Z] >>> [apiv2][query] GET https://api.github.com/repos/moraLeoPortal/actions/secrets/public-key type=owner
+[debug] [2026-10-04T07:12:08.631Z] <<< [apiv2][status] GET https://api.github.com/repos/moraLeoPortal/actions/secrets/public-key 404
+[debug] [2026-10-04T07:12:08.632Z] <<< [apiv2][body] GET https://api.github.com/repos/moraLeoPortal/actions/secrets/public-key {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[info] 
+[info] 
+[error] !  The provided authorization cannot be used with this repository. If this repository is in an organization, did you remember to grant access? 
+[info] 
+[info] i  Action required: Visit this URL to ensure access has been granted to the appropriate organization(s) for the Firebase CLI GitHub OAuth App: 
+[info] https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+[info] 
+[debug] [2026-10-04T07:12:25.419Z] >>> [apiv2][query] GET https://api.github.com/repos/https://github.com/chamalpramod96/moraLeoPortal/actions/secrets/public-key type=owner
+[debug] [2026-10-04T07:12:29.410Z] <<< [apiv2][status] GET https://api.github.com/repos/https://github.com/chamalpramod96/moraLeoPortal/actions/secrets/public-key 404
+[debug] [2026-10-04T07:12:29.410Z] <<< [apiv2][body] GET https://api.github.com/repos/https://github.com/chamalpramod96/moraLeoPortal/actions/secrets/public-key {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[info] 
+[info] 
+[error] !  The provided authorization cannot be used with this repository. If this repository is in an organization, did you remember to grant access? 
+[info] 
+[info] i  Action required: Visit this URL to ensure access has been granted to the appropriate organization(s) for the Firebase CLI GitHub OAuth App: 
+[info] https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+[info] 
+[debug] [2026-10-04T07:12:48.867Z] >>> [apiv2][query] GET https://api.github.com/repos/repository/actions/secrets/public-key type=owner
+[debug] [2026-10-04T07:12:51.021Z] <<< [apiv2][status] GET https://api.github.com/repos/repository/actions/secrets/public-key 404
+[debug] [2026-10-04T07:12:51.021Z] <<< [apiv2][body] GET https://api.github.com/repos/repository/actions/secrets/public-key {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[info] 
+[info] 
+[error] !  The provided authorization cannot be used with this repository. If this repository is in an organization, did you remember to grant access? 
+[info] 
+[info] i  Action required: Visit this URL to ensure access has been granted to the appropriate organization(s) for the Firebase CLI GitHub OAuth App: 
+[info] https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+[info] 
+[debug] [2026-10-04T07:12:55.436Z] >>> [apiv2][query] GET https://api.github.com/repos/y/actions/secrets/public-key type=owner
+[debug] [2026-10-04T07:12:58.268Z] <<< [apiv2][status] GET https://api.github.com/repos/y/actions/secrets/public-key 404
+[debug] [2026-10-04T07:12:58.269Z] <<< [apiv2][body] GET https://api.github.com/repos/y/actions/secrets/public-key {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[info] 
+[info] 
+[error] !  The provided authorization cannot be used with this repository. If this repository is in an organization, did you remember to grant access? 
+[info] 
+[info] i  Action required: Visit this URL to ensure access has been granted to the appropriate organization(s) for the Firebase CLI GitHub OAuth App: 
+[info] https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+[info] 
+[debug] [2026-10-04T07:13:00.034Z] >>> [apiv2][query] GET https://api.github.com/repos//actions/secrets/public-key type=owner
+[debug] [2026-10-04T07:13:02.605Z] <<< [apiv2][status] GET https://api.github.com/repos//actions/secrets/public-key 404
+[debug] [2026-10-04T07:13:02.605Z] <<< [apiv2][body] GET https://api.github.com/repos//actions/secrets/public-key {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[info] 
+[info] 
+[error] !  The provided authorization cannot be used with this repository. If this repository is in an organization, did you remember to grant access? 
+[info] 
+[info] i  Action required: Visit this URL to ensure access has been granted to the appropriate organization(s) for the Firebase CLI GitHub OAuth App: 
+[info] https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+[info] 
+[debug] [2026-10-04T07:13:11.586Z] >>> [apiv2][query] GET https://api.github.com/repos/yes/actions/secrets/public-key type=owner
+[debug] [2026-10-04T07:13:15.527Z] <<< [apiv2][status] GET https://api.github.com/repos/yes/actions/secrets/public-key 404
+[debug] [2026-10-04T07:13:15.527Z] <<< [apiv2][body] GET https://api.github.com/repos/yes/actions/secrets/public-key {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+[info] 
+[info] 
+[error] !  The provided authorization cannot be used with this repository. If this repository is in an organization, did you remember to grant access? 
+[info] 
+[info] i  Action required: Visit this URL to ensure access has been granted to the appropriate organization(s) for the Firebase CLI GitHub OAuth App: 
+[info] https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+[info] 
