@@ -118,7 +118,9 @@ export async function createMember(memberData) {
 
 export async function updateMember(email, updates) {
   if (IS_DEMO) { console.info('[DEMO] updateMember — not persisted.'); return; }
-  await updateDoc(doc(db, 'members', email.toLowerCase()), updates);
+  // `id` is the document key the UI carries around, not a field to store
+  const { id, ...fields } = updates;
+  await updateDoc(doc(db, 'members', email.toLowerCase()), fields);
 }
 
 export async function toggleMemberStatus(email, isActive) {

@@ -2,7 +2,7 @@ import { useState, useEffect }         from 'react';
 import { Link }                         from 'react-router-dom';
 import { useAuth }                      from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
-import { getMemberManualPoints, calcEventPoints } from '../services/pointsService';
+import { getMemberManualPoints, computeMemberPoints } from '../services/pointsService';
 import { useProfilePhoto }              from '../hooks/useProfilePhoto';
 import Badge                             from '../components/Badge';
 import LoadingSpinner                    from '../components/LoadingSpinner';
@@ -41,12 +41,16 @@ function DashboardPage() {
         setLoading(false);
       }
     })();
-  }, [memberData]);
+  // Keyed on email so a profile-photo change doesn't refetch everything
+  }, [memberData?.email]);
 
+  // Rate over the events this member was marked for (same as Profile and the
+  // Word export) — not all events, which would count future/unmarked ones.
   const attendedCount  = attendance.filter(a => a.status === 'attended').length;
-  const attendanceRate = calcAttendanceRate(attendedCount, events.length);
+  const attendanceRate = calcAttendanceRate(attendedCount, attendance.length);
 
-  const totalEventPts  = calcEventPoints(memberData?.email ?? '', attendance, events);
+  // Total = event participation + manual points, same as Points Table/Leaderboard
+  const points = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts);
 
   // Last 5 events with member status
   const recentEvents = events.slice(0, 5).map(ev => ({
@@ -103,7 +107,7 @@ function DashboardPage() {
 
       {/* ── Stats row ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard value={events.length}  label="Total Events"  color="text-portal-gold" />
+        <StatCard value={attendance.length} label="My Events"   color="text-portal-gold" />
         <StatCard value={attendedCount}  label="Attended"       color="text-green-400"   />
         <StatCard value={`${attendanceRate}%`} label="Rate"    color="text-portal-red"  />
       </div>
@@ -123,8 +127,11 @@ function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
         <div className="flex items-center gap-4">
             <div>
-              <p className="text-3xl font-bold text-portal-text">{totalEventPts.toLocaleString()}</p>
-              <p className="text-xs text-portal-muted mt-0.5">participation points</p>
+              <p className="text-3xl font-bold text-portal-text">{points.total.toLocaleString()}</p>
+              <p className="text-xs text-portal-muted mt-0.5">
+                {points.eventPoints.toLocaleString()} participation
+                {' + '}{points.manualPoints.toLocaleString()} other points
+              </p>
             </div>
           </div>
         </div>

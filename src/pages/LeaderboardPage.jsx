@@ -1,9 +1,8 @@
 import { useState, useEffect }        from 'react';
-import { useAuth }                     from '../context/AuthContext';
 import { useToast }                    from '../context/ToastContext';
 import LoadingSpinner                  from '../components/LoadingSpinner';
 import { getMembers }                  from '../services/memberService';
-import { getEvents, getMemberAttendance } from '../services/eventService';
+import { getEvents, getAllAttendance } from '../services/eventService';
 import { getAllManualPoints, computeMemberPoints } from '../services/pointsService';
 import { initials }                    from '../utils/helpers';
 
@@ -17,23 +16,18 @@ export default function LeaderboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [members, events, manualPts] = await Promise.all([
+        // One query per collection (not one attendance query per member)
+        const [members, events, manualPts, attendance] = await Promise.all([
           getMembers(),
           getEvents(),
           getAllManualPoints(),
+          getAllAttendance(),
         ]);
 
-        // fetch attendance for ALL members in parallel
-        const attPerMember = await Promise.all(
-          members.map(m => getMemberAttendance(m.email).then(att => ({ email: m.email, att })))
-        );
-        const attMap = Object.fromEntries(attPerMember.map(x => [x.email, x.att]));
-
-        const ranked = members.map(m => {
-          const att    = attMap[m.email] ?? [];
-          const all    = [...att];          // combine with events lookup below
+        // Rank current members only; deactivated members keep their records
+        const ranked = members.filter(m => m.isActive).map(m => {
           const { eventPoints, manualPoints, total } = computeMemberPoints(
-            m.email, att, events, manualPts
+            m.email, attendance, events, manualPts
           );
           return { member: m, eventPoints, manualPoints, total };
         });
@@ -48,7 +42,7 @@ export default function LeaderboardPage() {
     })();
   }, []);
 
-  if (loading) return <LoadingSpinner fullScreen />;
+  if (loading) return <LoadingSpinner />;
 
   const filtered = rows.filter(r =>
     r.member.fullName?.toLowerCase().includes(search.toLowerCase()) ||

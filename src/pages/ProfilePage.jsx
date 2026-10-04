@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth }             from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
-import { getMemberManualPoints, calcEventPoints } from '../services/pointsService';
+import { getMemberManualPoints, computeMemberPoints } from '../services/pointsService';
 import { downloadMemberProfile } from '../services/wordExport';
 import { sendSetPasswordEmail } from '../services/memberService';
 import { useProfilePhoto }       from '../hooks/useProfilePhoto';
@@ -39,7 +39,8 @@ function ProfilePage() {
         setLoading(false);
       }
     })();
-  }, [memberData]);
+  // Keyed on email so a profile-photo change doesn't reload the whole page
+  }, [memberData?.email]);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -73,7 +74,8 @@ function ProfilePage() {
   const attended  = attendance.filter(a => a.status === 'attended').length;
   const rate      = calcAttendanceRate(attended, attendance.length);
 
-  const totalEventPts  = calcEventPoints(memberData?.email ?? '', attendance, events);
+  // Total = event participation + manual points, same as Points Table/Leaderboard
+  const points = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts);
 
   // Join attendance with events
   const attWithEvent = attendance.map(rec => ({
@@ -213,8 +215,11 @@ function ProfilePage() {
 
         <div className="px-5 py-4 space-y-4">
           <div>
-            <p className="text-3xl font-bold text-portal-text">{totalEventPts.toLocaleString()}</p>
-            <p className="text-xs text-portal-muted mt-0.5">participation points</p>
+            <p className="text-3xl font-bold text-portal-text">{points.total.toLocaleString()}</p>
+            <p className="text-xs text-portal-muted mt-0.5">
+              {points.eventPoints.toLocaleString()} participation
+              {' + '}{points.manualPoints.toLocaleString()} other points
+            </p>
           </div>
 
           {/* Manual points breakdown */}

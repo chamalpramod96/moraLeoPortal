@@ -30,17 +30,19 @@ function EventsPage() {
         setLoading(false);
       }
     })();
-  }, [memberData]);
+  }, [memberData?.email]);
 
   const filtered = useMemo(() => {
     return events.filter(ev => {
-      const titleMatch = ev.title.toLowerCase().includes(search.toLowerCase());
+      const titleMatch = (ev.title ?? '').toLowerCase().includes(search.toLowerCase());
       const catMatch   = category === 'All' || ev.category === category;
 
       let dateMatch = true;
       if (dateFrom) {
         const evDate = ev.date?.toDate ? ev.date.toDate() : new Date(ev.date);
-        if (evDate < new Date(dateFrom)) dateMatch = false;
+        // Local midnight, matching how event dates are stored. new Date('YYYY-MM-DD')
+        // is UTC midnight, which in Sri Lanka (UTC+5:30) hid events on that day.
+        if (evDate < new Date(dateFrom + 'T00:00:00')) dateMatch = false;
       }
 
       return titleMatch && catMatch && dateMatch;

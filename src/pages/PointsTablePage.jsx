@@ -104,7 +104,7 @@ export default function PointsTablePage() {
     })();
   }, [memberData?.email]);
 
-  if (loading) return <LoadingSpinner fullScreen />;
+  if (loading) return <LoadingSpinner />;
 
   const { eventPoints, manualPoints, total } = totals;
   const { current, next, progressPct } = getLevelInfo(total);
