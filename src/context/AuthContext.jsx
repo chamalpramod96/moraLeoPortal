@@ -17,11 +17,37 @@ export const ADMIN_ROLES = ['secretary', 'president', 'superAdmin'];
 
 const AuthContext = createContext(null);
 
+// Firestore codes for "couldn't reach the server" (offline, weak signal)
+const isConnectionError = (err) =>
+  err?.code === 'unavailable' || err?.code === 'deadline-exceeded';
+
+function ConnectionError() {
+  return (
+    <div className="min-h-screen bg-portal-bg flex items-center justify-center p-4">
+      <div className="card-gold rounded-xl p-8 max-w-sm w-full text-center">
+        <i className="fa-solid fa-wifi text-3xl text-portal-gold mb-4" />
+        <h2 className="text-lg font-semibold text-portal-text">Can't connect</h2>
+        <p className="text-portal-muted text-sm mt-2">
+          MoraConnect couldn't reach the server. Check your internet connection and try again.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-6 w-full bg-portal-red hover:bg-portal-red-dark text-white font-semibold
+                     py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+        >
+          <i className="fa-solid fa-rotate-right" /> Try again
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [memberData,  setMemberData]  = useState(null);
   const [loading,     setLoading]     = useState(true);
   const [authError,   setAuthError]   = useState(null);
+  const [connError,   setConnError]   = useState(false);
 
   // ── Sync auth state ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -52,10 +78,16 @@ export function AuthProvider({ children }) {
             setCurrentUser(null);
             setMemberData(null);
           }
-        } catch {
-          await fbSignOut(auth);
-          setCurrentUser(null);
-          setMemberData(null);
+        } catch (err) {
+          if (isConnectionError(err)) {
+            // A weak connection isn't proof they aren't a member — keep the
+            // login and let them retry instead of signing them out.
+            setConnError(true);
+          } else {
+            await fbSignOut(auth);
+            setCurrentUser(null);
+            setMemberData(null);
+          }
         }
       } else {
         setCurrentUser(null);
@@ -112,6 +144,11 @@ export function AuthProvider({ children }) {
         case 'ACCESS_DENIED':
           message = 'Access Denied: Your account is not registered as an active member.';
           break;
+        case 'auth/network-request-failed':
+        case 'unavailable':
+        case 'deadline-exceeded':
+          message = "Can't connect. Check your internet connection and try again.";
+          break;
         default:
           message = error.message || 'An error occurred. Please try again.';
       }
@@ -163,6 +200,7 @@ export function AuthProvider({ children }) {
   };
 
   if (loading) return <LoadingSpinner fullScreen />;
+  if (connError) return <ConnectionError />;
 
   return (
     <AuthContext.Provider value={value}>

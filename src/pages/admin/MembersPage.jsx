@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect }  from 'react';
+import { useState, useMemo }  from 'react';
 import { useAuth }            from '../../context/AuthContext';
 import { useMembers }         from '../../hooks/useMembers';
 import {
@@ -15,16 +15,13 @@ import Modal                  from '../../components/Modal';
 import ConfirmDialog          from '../../components/ConfirmDialog';
 import Badge                  from '../../components/Badge';
 import LoadingSpinner         from '../../components/LoadingSpinner';
-import { formatDateShort }    from '../../utils/helpers';
-import { MANUAL_POINT_CATEGORIES, groupedManualCategories, getManualCategory } from '../../data/pointsConfig';
+import { groupedManualCategories, getManualCategory } from '../../data/pointsConfig';
 import AddMemberForm          from './AddMemberForm';
 
 const EMPTY_FORM = {
   memberId: '', fullName: '', email: '', phone: '',
   role: 'member', position: '', term: '', profilePhoto: '',
 };
-
-const TERMS      = ['2024/25', '2025/26', '2026/27'];
 
 function MembersPage() {
   const { memberData: me, isSuperAdmin } = useAuth();
@@ -88,7 +85,7 @@ function MembersPage() {
       setPointsForm({ categoryId: '', points: '', description: '' });
       showToast(`Added ${pts} pts to ${pointsTarget.fullName}.`, 'success');
       refreshLeaderboardSoon();
-    } catch (err) {
+    } catch {
       showToast('Failed to add points.', 'error');
     } finally {
       setPointsSaving(false);
@@ -113,7 +110,6 @@ function MembersPage() {
     setPointsForm(f => ({ ...f, categoryId: id, points: cat?.id === 'manual' ? '' : (cat?.points ?? '') }));
   };
 
-  const [form,      setForm]     = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [saving,    setSaving]   = useState(false);
   const filtered = useMemo(() => {
@@ -199,11 +195,29 @@ function MembersPage() {
   };
 
   // ── Save (edit) ───────────────────────────────────────────────────────────
+  // Only the form's editable fields, and only those the admin changed — saving
+  // the whole snapshot could undo something that changed meanwhile (e.g. the
+  // member uploading a new photo while this form was open).
+  const EDITABLE = ['memberId', 'fullName', 'phone', 'role', 'position', 'term', 'profilePhoto'];
+
   const handleEdit = async (formData) => {
+    const changes = {};
+    EDITABLE.forEach(k => {
+      const value = typeof formData[k] === 'string' ? formData[k].trim() : formData[k];
+      if (value !== (editItem[k] ?? '')) changes[k] = value ?? '';
+    });
+    if (!changes.fullName && 'fullName' in changes) {
+      setFormError('Full Name is required.');
+      return;
+    }
+    if (Object.keys(changes).length === 0) {
+      setEditItem(null);
+      return;
+    }
     setSaving(true);
     setFormError('');
     try {
-      await updateMember(editItem.email, formData);
+      await updateMember(editItem.email, changes);
       showToast('Member updated.', 'success');
       refreshLeaderboardSoon();
       setEditItem(null);
@@ -359,10 +373,13 @@ function MembersPage() {
                     <td className="px-4 py-3"><Badge status={m.isActive ? 'active' : 'inactive'} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(m)} title="Edit"
-                          className="text-portal-muted hover:text-portal-gold transition-colors p-1">
-                          <i className="fa-solid fa-pen-to-square" />
-                        </button>
+                        {/* Only a Super Admin can edit a Super Admin (rules enforce this too) */}
+                        {(m.role !== 'superAdmin' || isSuperAdmin) && (
+                          <button onClick={() => openEdit(m)} title="Edit"
+                            className="text-portal-muted hover:text-portal-gold transition-colors p-1">
+                            <i className="fa-solid fa-pen-to-square" />
+                          </button>
+                        )}
                         <button onClick={() => openPoints(m)} title="Manage Points"
                           className="text-portal-muted hover:text-yellow-400 transition-colors p-1">
                           <i className="fa-solid fa-trophy" />
