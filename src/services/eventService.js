@@ -47,7 +47,8 @@ export async function addEvent(eventData, createdBy) {
 
 export async function updateEvent(eventId, updates) {
   if (IS_DEMO) { console.info('[DEMO] updateEvent — not persisted.'); return; }
-  const payload = { ...updates };
+  // `id` is the document key the UI carries around, not a field to store
+  const { id, ...payload } = updates;
   if (updates.date && typeof updates.date === 'string') {
     payload.date = Timestamp.fromDate(new Date(updates.date + 'T00:00:00'));
   }
@@ -91,17 +92,30 @@ export async function getMemberAttendance(memberEmail) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+/** All attendance records (admin only — rules deny this query to members). */
+export async function getAllAttendance() {
+  if (IS_DEMO) return MOCK_ATTENDANCE;
+  const snap = await getDocs(collection(db, 'attendance'));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
 /**
- * Replace all attendance records for an event.
+ * Replace the attendance records of the given members for an event.
+ * Records of members not in `records` (e.g. deactivated members, who aren't
+ * shown on the attendance page) are left untouched, so their history and
+ * points survive a re-save.
  * records: [{ memberId: string, status: 'attended'|'absent'|'excused' }]
  */
 export async function saveEventAttendance(eventId, records, markedBy) {
   if (IS_DEMO) { console.info('[DEMO] saveEventAttendance — not persisted.'); return; }
   const existing = await getAttendanceForEvent(eventId);
+  const savedIds = new Set(records.map(r => r.memberId));
 
   // Single atomic batch: either every delete + write succeeds, or none do.
   const batch = writeBatch(db);
-  existing.forEach(a => batch.delete(doc(db, 'attendance', a.id)));
+  existing
+    .filter(a => savedIds.has(a.memberId))
+    .forEach(a => batch.delete(doc(db, 'attendance', a.id)));
   records.forEach(r => {
     batch.set(doc(collection(db, 'attendance')), {
       eventId,

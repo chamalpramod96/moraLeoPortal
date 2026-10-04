@@ -97,25 +97,35 @@ function AdminEventsPage() {
     if (!formData.title || !formData.date) { setFormError('Title and Date are required.'); return; }
     setSaving(true);
     setFormError('');
+    // Exclude photo arrays before creating the event
+    const { existingPhotos, newPhotoFiles, ...cleanFormData } = formData;
+    let ref;
     try {
-      // Exclude photo arrays before creating the event
-      const { existingPhotos, newPhotoFiles, ...cleanFormData } = formData;
       // Create event first to get its ID, then upload photos
-      const ref     = await addEvent({ ...cleanFormData, photos: [] }, memberData.email);
-      const eventId = ref?.id ?? 'demo-new';
-      const photos  = await resolvePhotos(eventId, formData);
-      if (photos.length > 0 && ref?.id) await updateEvent(eventId, { photos });
-      showToast(`Event "${formData.title}" created.`, 'success');
-      setShowAdd(false);
-      refetch();
+      ref = await addEvent({ ...cleanFormData, photos: [] }, memberData.email);
     } catch (err) {
       setFormError(err.message);
-    } finally {
       setSaving(false);
+      return;
+    }
+    // The event exists from here on. Close the form even if photos fail, so a
+    // second "Add" click can't create a duplicate event.
+    const eventId = ref?.id ?? 'demo-new';
+    try {
+      const photos = await resolvePhotos(eventId, formData);
+      if (photos.length > 0 && ref?.id) await updateEvent(eventId, { photos });
+      showToast(`Event "${formData.title}" created.`, 'success');
+    } catch {
+      showToast(`Event "${formData.title}" created, but the photos failed to upload. Edit the event to add them.`, 'error');
+    } finally {
+      setShowAdd(false);
+      setSaving(false);
+      refetch();
     }
   };
 
   const handleEdit = async (formData) => {
+    if (!formData.title || !formData.date) { setFormError('Title and Date are required.'); return; }
     setSaving(true);
     setFormError('');
     try {
@@ -123,18 +133,18 @@ function AdminEventsPage() {
       const originalPhotoUrls = new Set(form.existingPhotos?.map(p => p.url) ?? []);
       const newPhotoUrls = new Set(formData.existingPhotos?.map(p => p.url) ?? []);
       const removedPhotoUrls = [...originalPhotoUrls].filter(url => !newPhotoUrls.has(url));
-      
-      // Delete removed photos from storage
-      if (!IS_DEMO) {
-        for (const url of removedPhotoUrls) {
-          await deleteEventPhoto(url);
-        }
-      }
-      
+
       const photos = await resolvePhotos(editItem.id, formData);
       // Destructure to exclude photo-related fields from formData before sending to Firestore
       const { existingPhotos, newPhotoFiles, ...cleanFormData } = formData;
       await updateEvent(editItem.id, { ...cleanFormData, photos });
+
+      // Only now that the event no longer references them, delete removed
+      // photos from Storage — deleting first left broken images if the save failed.
+      if (!IS_DEMO) {
+        await Promise.all(removedPhotoUrls.map(url => deleteEventPhoto(url)));
+      }
+
       showToast('Event updated.', 'success');
       setEditItem(null);
       refetch();
