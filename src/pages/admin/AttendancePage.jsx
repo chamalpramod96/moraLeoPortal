@@ -5,7 +5,7 @@ import { getEvent, getAttendanceForEvent, saveEventAttendance } from '../../serv
 import { getMembers }            from '../../services/memberService';
 import { useToast }              from '../../context/ToastContext';
 import LoadingSpinner            from '../../components/LoadingSpinner';
-import { formatDate }            from '../../utils/helpers';
+import { formatDate, safeHttpsUrl } from '../../utils/helpers';
 import { getEventCategory }      from '../../data/pointsConfig';
 
 const STATUSES = ['attended', 'absent', 'excused'];
@@ -154,9 +154,9 @@ function AttendancePage() {
           <div className="mt-3 flex flex-wrap gap-3">
             {event.photos.map((p, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
-                <a href={p.url} target="_blank" rel="noopener noreferrer">
+                <a href={safeHttpsUrl(p.url)} target="_blank" rel="noopener noreferrer">
                   <img
-                    src={p.url}
+                    src={safeHttpsUrl(p.url)}
                     alt={p.type === 'signsheet' ? 'Sign Sheet' : 'Event Photo'}
                     className="h-28 rounded-lg border border-subtle object-cover hover:opacity-90 transition-opacity"
                   />

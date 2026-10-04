@@ -21,6 +21,11 @@ service firebase.storage {
         callerMember().role in ['secretary', 'president', 'superAdmin'];
     }
 
+    // Photo formats only — no SVG (it can carry script) or other image/* types
+    function isPhoto() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp|gif|heic|heif)');
+    }
+
     // ── Profile photos ──────────────────────────────────────────────────────
     // Path: profiles/{email}/photo
     // • Any active member can READ (needed to display in portal, Word doc)
@@ -30,7 +35,7 @@ service firebase.storage {
       allow read:  if isActiveMember();
       allow write: if isActiveMember()
         && request.resource.size  < 5 * 1024 * 1024      // 5 MB max
-        && request.resource.contentType.matches('image/.*')
+        && isPhoto()
         && (request.auth.token.email == email || isAdmin());
     }
 
@@ -43,7 +48,7 @@ service firebase.storage {
       allow read:   if isActiveMember();
       allow write:  if isAdmin()
         && request.resource.size < 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && isPhoto();
       allow delete: if isAdmin();
     }
 

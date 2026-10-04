@@ -9,7 +9,7 @@ import { useToast }            from '../context/ToastContext';
 import Badge                   from '../components/Badge';
 import LoadingSpinner          from '../components/LoadingSpinner';
 import { getManualCategory }   from '../data/pointsConfig';
-import { formatDate, formatDateShort, calcAttendanceRate } from '../utils/helpers';
+import { formatDate, formatDateShort, calcAttendanceRate, PHOTO_ACCEPT } from '../utils/helpers';
 
 function ProfilePage() {
   const { memberData }       = useAuth();
@@ -130,7 +130,7 @@ function ProfilePage() {
           <input
             ref={photoInputRef}
             type="file"
-            accept="image/*"
+            accept={PHOTO_ACCEPT}
             className="hidden"
             onChange={handlePhotoChange}
           />

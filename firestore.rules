@@ -50,9 +50,13 @@ service cloud.firestore {
         isSuperAdmin()
       )) ||
         // A member may update ONLY their own profilePhoto field — nothing else
-        // (role, isActive, email, etc. stay admin-only, preventing self-promotion).
+        // (role, isActive, email, etc. stay admin-only, preventing self-promotion),
+        // and only to a Firebase Storage URL (no outside tracking images).
         (isActiveMember() && request.auth.token.email == memberEmail &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profilePhoto']));
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profilePhoto']) &&
+         request.resource.data.profilePhoto is string &&
+         (request.resource.data.profilePhoto == '' ||
+          request.resource.data.profilePhoto.matches('https://firebasestorage[.]googleapis[.]com/.*')));
 
       // Only superAdmin can permanently delete a member account
       allow delete: if isSuperAdmin();

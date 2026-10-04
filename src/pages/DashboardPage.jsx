@@ -6,7 +6,7 @@ import { getMemberManualPoints, calcEventPoints } from '../services/pointsServic
 import { useProfilePhoto }              from '../hooks/useProfilePhoto';
 import Badge                             from '../components/Badge';
 import LoadingSpinner                    from '../components/LoadingSpinner';
-import { formatDateShort, calcAttendanceRate } from '../utils/helpers';
+import { formatDateShort, calcAttendanceRate, PHOTO_ACCEPT } from '../utils/helpers';
 
 function StatCard({ value, label, color = 'text-portal-gold' }) {
   return (
@@ -85,7 +85,7 @@ function DashboardPage() {
             </div>
           </div>
           {/* Hidden file input */}
-          <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+          <input ref={photoInputRef} type="file" accept={PHOTO_ACCEPT} className="hidden" onChange={handlePhotoChange} />
 
           <div className="min-w-0">
             <p className="text-portal-muted text-xs">Welcome back,</p>

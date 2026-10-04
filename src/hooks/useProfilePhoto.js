@@ -3,6 +3,7 @@ import { useAuth }              from '../context/AuthContext';
 import { useToast }             from '../context/ToastContext';
 import { uploadProfilePhoto }   from '../services/storageService';
 import { updateMember }         from '../services/memberService';
+import { isAllowedPhoto }       from '../utils/helpers';
 
 /**
  * Shared hook for profile photo upload.
@@ -18,8 +19,8 @@ export function useProfilePhoto() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    if (!file.type.startsWith('image/')) {
-      showToast('Please select an image file.', 'error');
+    if (!isAllowedPhoto(file)) {
+      showToast('Please choose a JPG, PNG, WebP, GIF or HEIC photo.', 'error');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {

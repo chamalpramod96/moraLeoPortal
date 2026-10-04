@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getEventCategory, groupedEventCategories } from '../../data/pointsConfig';
+import { PHOTO_ACCEPT, isAllowedPhoto } from '../../utils/helpers';
 
 const EMPTY_FORM = {
   title: '', description: '', date: '', location: '', category: 'Service',
@@ -47,7 +48,8 @@ function EventFormIsolated({
   };
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files ?? []);
+    // Skip formats Storage rules reject (e.g. SVG)
+    const files = Array.from(e.target.files ?? []).filter(isAllowedPhoto);
     const remaining = 3 - totalPhotoCount;
     const toAdd = files.slice(0, remaining).map(file => ({
       file,
@@ -228,7 +230,7 @@ function EventFormIsolated({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={PHOTO_ACCEPT}
           multiple
           className="hidden"
           onChange={handleFileSelect}

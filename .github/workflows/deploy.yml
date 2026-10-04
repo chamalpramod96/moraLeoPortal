@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# Least privilege for GITHUB_TOKEN: production deploys on push never call the
+# GitHub API (action-hosting-deploy only creates checks/comments on PRs).
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

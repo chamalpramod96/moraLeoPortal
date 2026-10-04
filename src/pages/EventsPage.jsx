@@ -3,7 +3,7 @@ import { useAuth }                       from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
 import Badge                              from '../components/Badge';
 import LoadingSpinner                     from '../components/LoadingSpinner';
-import { formatDateShort }                from '../utils/helpers';
+import { formatDateShort, safeHttpsUrl }  from '../utils/helpers';
 
 const CATEGORIES = ['All', 'Service', 'Fellowship', 'Official', 'Other'];
 
@@ -155,9 +155,9 @@ function EventsPage() {
                 <div className="flex gap-1.5">
                   {ev.photos.map((p, i) => (
                     <div key={i} className="relative flex-shrink-0">
-                      <a href={p.url} target="_blank" rel="noopener noreferrer">
+                      <a href={safeHttpsUrl(p.url)} target="_blank" rel="noopener noreferrer">
                         <img
-                          src={p.url}
+                          src={safeHttpsUrl(p.url)}
                           alt={p.type}
                           className="w-16 h-16 rounded-lg object-cover border border-subtle
                                      hover:opacity-90 transition-opacity"
