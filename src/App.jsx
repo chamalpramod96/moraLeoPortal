@@ -5,6 +5,7 @@ import ProtectedRoute     from './components/ProtectedRoute';
 import Layout             from './components/Layout';
 import LoginPage          from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage  from './pages/ResetPasswordPage';
 import DashboardPage      from './pages/DashboardPage';
 import ProfilePage        from './pages/ProfilePage';
 import EventsPage         from './pages/EventsPage';
@@ -23,6 +24,8 @@ function App() {
             {/* Public */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            {/* Target of the password-reset / invite email link */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* Authenticated shell */}
             <Route
