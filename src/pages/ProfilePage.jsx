@@ -3,6 +3,7 @@ import { useAuth }             from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
 import { getMemberManualPoints, calcEventPoints } from '../services/pointsService';
 import { downloadMemberProfile } from '../services/wordExport';
+import { sendSetPasswordEmail } from '../services/memberService';
 import { useProfilePhoto }       from '../hooks/useProfilePhoto';
 import { useToast }            from '../context/ToastContext';
 import Badge                   from '../components/Badge';
@@ -19,6 +20,7 @@ function ProfilePage() {
   const [manualPts,   setManualPts]   = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [pwSending,   setPwSending]   = useState(false);
 
   useEffect(() => {
     if (!memberData) return;
@@ -49,6 +51,20 @@ function ProfilePage() {
       showToast('Failed to generate document. Please try again.', 'error');
     } finally {
       setDownloading(false);
+    }
+  };
+
+  // Password changes go through Firebase's emailed link, which proves the
+  // person owns the inbox and needs no current-password prompt here.
+  const handleChangePassword = async () => {
+    setPwSending(true);
+    try {
+      await sendSetPasswordEmail(memberData.email);
+      showToast(`We emailed a change-password link to ${memberData.email}. Check spam if you don't see it.`, 'success');
+    } catch {
+      showToast('Failed to send the email. Please try again.', 'error');
+    } finally {
+      setPwSending(false);
     }
   };
 
@@ -125,27 +141,39 @@ function ProfilePage() {
             <p className="text-portal-muted text-xs font-mono mt-1">{memberData?.memberId}</p>
           </div>
 
-          {/* Download button */}
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold
-                       border border-portal-gold/50 text-portal-gold
-                       hover:bg-portal-gold/10 disabled:opacity-50 disabled:cursor-not-allowed
-                       transition-colors self-center sm:self-auto"
-          >
-            {downloading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-portal-gold/30 border-t-portal-gold rounded-full animate-spin" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-file-word" />
-                Download Profile
-              </>
-            )}
-          </button>
+          {/* Change password + download buttons */}
+          <div className="flex flex-wrap gap-2 justify-center self-center sm:self-auto">
+            <button
+              onClick={handleChangePassword}
+              disabled={pwSending}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold
+                         border border-white/10 text-portal-muted hover:text-portal-text
+                         hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <i className={`fa-solid ${pwSending ? 'fa-spinner fa-spin' : 'fa-key'}`} />
+              Change Password
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold
+                         border border-portal-gold/50 text-portal-gold
+                         hover:bg-portal-gold/10 disabled:opacity-50 disabled:cursor-not-allowed
+                         transition-colors"
+            >
+              {downloading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-portal-gold/30 border-t-portal-gold rounded-full animate-spin" />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-file-word" />
+                  Download Profile
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Detail grid */}

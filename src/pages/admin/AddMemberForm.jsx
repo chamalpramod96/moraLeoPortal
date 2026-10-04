@@ -3,7 +3,6 @@ import { useState } from 'react';
 const EMPTY_FORM = {
   memberId: '', fullName: '', email: '', phone: '',
   role: 'member', position: '', term: '', profilePhoto: '',
-  password: '',
 };
 
 const TERMS = ['2024/25', '2025/26', '2026/27'];
@@ -163,20 +162,12 @@ function AddMemberForm({
           </div>
 
           {isAdd && (
-            <div className="col-span-2">
-              <label className="block text-xs text-portal-muted mb-1">Initial Password *</label>
-              <input 
-                type="password" 
-                value={form.password} 
-                onChange={handleFieldChange('password')}
-                autoComplete="new-password"
-                placeholder="Min. 6 characters"
-                className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                           text-portal-text text-sm focus:outline-none focus:border-portal-gold/50"
-                required 
-                minLength={6} 
-              />
-            </div>
+            <p className="col-span-2 text-xs text-portal-muted bg-portal-gold/5 border border-portal-gold/20
+                          rounded-lg px-3 py-2">
+              <i className="fa-solid fa-envelope text-portal-gold mr-2" />
+              The member will get an email with a link to set their own password.
+              Ask them to check their spam folder if it doesn't arrive.
+            </p>
           )}
         </div>
 

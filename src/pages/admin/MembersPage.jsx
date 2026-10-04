@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect }  from 'react';
 import { useAuth }            from '../../context/AuthContext';
 import { useMembers }         from '../../hooks/useMembers';
 import {
-  createMember, updateMember, toggleMemberStatus,
+  createMember, updateMember, toggleMemberStatus, sendSetPasswordEmail,
 } from '../../services/memberService';
 import {
   getMemberManualPoints, addManualPoints, deleteManualPoints,
@@ -19,7 +19,6 @@ import AddMemberForm          from './AddMemberForm';
 const EMPTY_FORM = {
   memberId: '', fullName: '', email: '', phone: '',
   role: 'member', position: '', term: '', profilePhoto: '',
-  password: '',
 };
 
 const TERMS      = ['2024/25', '2025/26', '2026/27'];
@@ -146,29 +145,49 @@ function MembersPage() {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const handleAdd = async (formData) => {
-    if (!formData.email || !formData.password || !formData.fullName) {
-      setFormError('Full Name, Email and Password are required.');
+    if (!formData.email || !formData.fullName) {
+      setFormError('Full Name and Email are required.');
       return;
     }
     if (!EMAIL_RE.test(formData.email.trim())) {
       setFormError('Please enter a valid email address.');
       return;
     }
-    if (formData.password.length < 6) {
-      setFormError('Password must be at least 6 characters.');
-      return;
-    }
     setSaving(true);
     setFormError('');
     try {
-      await createMember(formData, formData.password);
-      showToast(`Member "${formData.fullName}" added successfully.`, 'success');
+      const { inviteSent } = await createMember({ ...formData, email: formData.email.trim() });
+      showToast(
+        inviteSent
+          ? `Member "${formData.fullName}" added. A set-password email was sent to ${formData.email.trim()}.`
+          : `Member "${formData.fullName}" added, but the invite email failed. Use "Resend invite".`,
+        inviteSent ? 'success' : 'error',
+      );
       setShowAdd(false);
       refetch();
     } catch (err) {
-      setFormError(err.message || 'Failed to create member.');
+      setFormError(
+        err.code === 'auth/email-already-in-use'
+          ? 'An account with this email already exists.'
+          : err.message || 'Failed to create member.',
+      );
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Resend invite (set-password email) ───────────────────────────────────
+  const [inviting, setInviting] = useState(null);   // email currently sending
+
+  const handleResendInvite = async (m) => {
+    setInviting(m.email);
+    try {
+      await sendSetPasswordEmail(m.email);
+      showToast(`Set-password email sent to ${m.email}.`, 'success');
+    } catch {
+      showToast('Failed to send the email. Please try again.', 'error');
+    } finally {
+      setInviting(null);
     }
   };
 
@@ -177,8 +196,7 @@ function MembersPage() {
     setSaving(true);
     setFormError('');
     try {
-      const { password, ...updates } = formData;
-      await updateMember(editItem.email, updates);
+      await updateMember(editItem.email, formData);
       showToast('Member updated.', 'success');
       setEditItem(null);
       refetch();
@@ -305,6 +323,13 @@ function MembersPage() {
                           className="text-portal-muted hover:text-yellow-400 transition-colors p-1">
                           <i className="fa-solid fa-trophy" />
                         </button>
+                        {m.isActive && (
+                          <button onClick={() => handleResendInvite(m)} title="Resend invite (set-password email)"
+                            disabled={inviting === m.email}
+                            className="text-portal-muted hover:text-sky-400 disabled:opacity-50 transition-colors p-1">
+                            <i className={`fa-solid ${inviting === m.email ? 'fa-spinner fa-spin' : 'fa-envelope'}`} />
+                          </button>
+                        )}
                         {m.email !== me?.email && (
                           <button
                             onClick={() => setConfirm({
@@ -470,7 +495,7 @@ function MembersPage() {
         {!!editItem && (
           <AddMemberForm
             key="edit-form"
-            initialForm={{ ...EMPTY_FORM, ...editItem, password: '' }}
+            initialForm={{ ...EMPTY_FORM, ...editItem }}
             roles={ROLES}
             isAdd={false}
             formError={formError}

@@ -7,8 +7,9 @@ import {
 } from 'firebase/app';
 import {
   getAuth, createUserWithEmailAndPassword, signOut as fbSignOut, deleteUser,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
-import { db, firebaseConfig } from './firebase';
+import { auth, db, firebaseConfig } from './firebase';
 import { MOCK_MEMBERS } from '../data/mockData';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
@@ -39,15 +40,36 @@ export async function getMember(email) {
 
 // ─── Create ────────────────────────────────────────────────────────────────
 
+// Throwaway password for a new account. Nobody ever sees or uses it — the
+// member sets their own password from the invite email. The suffix covers
+// any upper/lower/digit/symbol password policy on the project.
+function randomPassword() {
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '') + 'Aa1!';
+}
+
 /**
- * Creates a Firebase Auth account (using secondary app so the secretary
- * stays logged in), then writes the member document to Firestore.
+ * Emails the member a link to set (or reset) their own password.
+ * Used right after account creation and for the admin's "Resend invite".
  */
-export async function createMember(memberData, password) {
+export async function sendSetPasswordEmail(email) {
+  if (IS_DEMO) { console.info('[DEMO] sendSetPasswordEmail — no email sent.'); return; }
+  await sendPasswordResetEmail(auth, email.toLowerCase());
+}
+
+/**
+ * Creates a Firebase Auth account with a random password (using secondary app
+ * so the secretary stays logged in), writes the member document to Firestore,
+ * then emails the member a link to set their own password.
+ *
+ * Returns { inviteSent } — false if the account was created but the email
+ * failed, so the admin can use "Resend invite".
+ */
+export async function createMember(memberData) {
   if (IS_DEMO) {
     // Simulate success in demo mode — data is not actually persisted
     console.info('[DEMO] createMember called — changes are not saved in demo mode.');
-    return { email: memberData.email };
+    return { inviteSent: true };
   }
   const secondaryAuth = getSecondaryAuth();
 
@@ -55,7 +77,7 @@ export async function createMember(memberData, password) {
   const { user } = await createUserWithEmailAndPassword(
     secondaryAuth,
     memberData.email.toLowerCase(),
-    password,
+    randomPassword(),
   );
 
   // 2. Persist member document. If this fails, roll back the Auth account
@@ -82,7 +104,14 @@ export async function createMember(memberData, password) {
     await fbSignOut(secondaryAuth).catch(() => {});
   }
 
-  return user;
+  // 4. Invite email. The member exists at this point, so a failure here is
+  //    reported rather than thrown.
+  try {
+    await sendSetPasswordEmail(email);
+    return { inviteSent: true };
+  } catch {
+    return { inviteSent: false };
+  }
 }
 
 // ─── Update ────────────────────────────────────────────────────────────────
