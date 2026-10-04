@@ -43,6 +43,7 @@ function App() {
               <Route path="events"    element={<EventsPage />} />
               <Route path="points"    element={<PointsTablePage />} />
               <Route path="orientation" element={<OrientationPage />} />
+              <Route path="leaderboard" element={<LeaderboardPage />} />
 
               {/* Secretary-only */}
               <Route
@@ -61,14 +62,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="admin/leaderboard"
-                element={
-                  <ProtectedRoute requireSecretary>
-                    <LeaderboardPage />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Leaderboard moved to /leaderboard for all members; keep old links working */}
+              <Route path="admin/leaderboard" element={<Navigate to="/leaderboard" replace />} />
               <Route
                 path="admin/events/:eventId/attendance"
                 element={

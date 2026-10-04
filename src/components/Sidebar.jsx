@@ -8,13 +8,13 @@ const NAV_LINKS = [
   { to: '/profile',             label: 'My Profile',    icon: 'fa-user'          },
   { to: '/events',              label: 'Events',        icon: 'fa-calendar-days' },
   { to: '/points',              label: 'Points Table',  icon: 'fa-trophy'        },
+  { to: '/leaderboard',         label: 'Leaderboard',   icon: 'fa-ranking-star'  },
   { to: '/orientation',         label: 'Orientation Program', icon: 'fa-book-open' },
 ];
 
 const ADMIN_LINKS = [
   { to: '/admin/members',       label: 'Members',       icon: 'fa-users'         },
   { to: '/admin/events',        label: 'Manage Events', icon: 'fa-calendar-plus' },
-  { to: '/admin/leaderboard',   label: 'Leaderboard',   icon: 'fa-ranking-star'  },
 ];
 
 function NavItem({ to, label, icon, onClick }) {

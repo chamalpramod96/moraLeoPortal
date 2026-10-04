@@ -10,6 +10,7 @@ import {
   getMemberManualPoints, addManualPoints, deleteManualPoints,
 } from '../../services/pointsService';
 import { useToast }           from '../../context/ToastContext';
+import { refreshLeaderboardSoon } from '../../services/leaderboardService';
 import Modal                  from '../../components/Modal';
 import ConfirmDialog          from '../../components/ConfirmDialog';
 import Badge                  from '../../components/Badge';
@@ -86,6 +87,7 @@ function MembersPage() {
       setMemberPoints(fresh);
       setPointsForm({ categoryId: '', points: '', description: '' });
       showToast(`Added ${pts} pts to ${pointsTarget.fullName}.`, 'success');
+      refreshLeaderboardSoon();
     } catch (err) {
       showToast('Failed to add points.', 'error');
     } finally {
@@ -98,6 +100,7 @@ function MembersPage() {
       await deleteManualPoints(ptId);
       setMemberPoints(prev => prev.filter(p => p.id !== ptId));
       showToast('Point entry removed.', 'success');
+      refreshLeaderboardSoon();
     } catch {
       showToast('Failed to delete points.', 'error');
     }
@@ -165,6 +168,7 @@ function MembersPage() {
           : `Member "${formData.fullName}" added, but the invite email failed. Use "Resend invite".`,
         inviteSent ? 'success' : 'error',
       );
+      refreshLeaderboardSoon();
       setShowAdd(false);
       refetch();
     } catch (err) {
@@ -201,6 +205,7 @@ function MembersPage() {
     try {
       await updateMember(editItem.email, formData);
       showToast('Member updated.', 'success');
+      refreshLeaderboardSoon();
       setEditItem(null);
       refetch();
     } catch (err) {
@@ -216,6 +221,7 @@ function MembersPage() {
     try {
       await toggleMemberStatus(member.email, true);
       showToast(`${member.fullName} reactivated.`, 'success');
+      refreshLeaderboardSoon();
       refetch();
     } catch {
       showToast('Action failed. Please try again.', 'error');
@@ -254,6 +260,7 @@ function MembersPage() {
     try {
       await removeMember(removeItem.email);
       showToast(`${removeItem.fullName} was removed permanently.`, 'success');
+      refreshLeaderboardSoon();
       setRemoveItem(null);
       refetch();
     } catch {

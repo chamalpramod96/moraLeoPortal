@@ -7,6 +7,7 @@ import {
 } from '../../services/eventService';
 import { uploadEventPhoto, deleteEventPhoto } from '../../services/storageService';
 import { useToast }             from '../../context/ToastContext';
+import { refreshLeaderboardSoon } from '../../services/leaderboardService';
 import Modal                    from '../../components/Modal';
 import ConfirmDialog            from '../../components/ConfirmDialog';
 import { auth }                 from '../../services/firebase';
@@ -146,6 +147,7 @@ function AdminEventsPage() {
       }
 
       showToast('Event updated.', 'success');
+      refreshLeaderboardSoon();
       setEditItem(null);
       refetch();
     } catch (err) {
@@ -179,6 +181,7 @@ function AdminEventsPage() {
       }
       await deleteEvent(delItem.id);
       showToast(`"${delItem.title}" deleted.`, 'success');
+      refreshLeaderboardSoon();
       refetch();
       setDelItem(null);
     } catch (err) {

@@ -1,0 +1,84 @@
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
+import { getMembers } from './memberService';
+import { getEvents, getAllAttendance } from './eventService';
+import { getAllManualPoints, computeMemberPoints } from './pointsService';
+
+const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+
+/**
+ * The leaderboard every member can see is a published summary in
+ * leaderboard/current: name, position and points only. Members can't read
+ * other members' records or attendance (rules), so admins — who can —
+ * compute it and publish it after any change that affects points.
+ */
+const leaderboardDoc = () => doc(db, 'leaderboard', 'current');
+
+/**
+ * Opaque per-member key (SHA-256 of the lowercase email), so a member can
+ * find their own row without the leaderboard exposing anyone's email.
+ */
+export async function memberKey(email) {
+  const data = new TextEncoder().encode((email ?? '').trim().toLowerCase());
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Sort by total; equal totals share a place (1, 2, 2, 4). */
+function rankRows(rows) {
+  rows.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  rows.forEach((r, i) => {
+    r.rank = i > 0 && r.total === rows[i - 1].total ? rows[i - 1].rank : i + 1;
+  });
+  return rows;
+}
+
+/** Admin only: build the ranking from full data (active members). */
+export async function computeLeaderboard() {
+  const [members, events, manualPts, attendance] = await Promise.all([
+    getMembers(), getEvents(), getAllManualPoints(), getAllAttendance(),
+  ]);
+  const rows = await Promise.all(
+    members.filter(m => m.isActive).map(async m => {
+      const { eventPoints, manualPoints, total } =
+        computeMemberPoints(m.email, attendance, events, manualPts);
+      return {
+        key:      await memberKey(m.email),
+        name:     m.fullName ?? '',
+        position: m.position ?? '',
+        eventPoints, manualPoints, total,
+      };
+    }),
+  );
+  return rankRows(rows);
+}
+
+/** Admin only: save computed rows as the members-visible leaderboard. */
+export async function saveLeaderboard(rows) {
+  if (IS_DEMO) return;
+  await setDoc(leaderboardDoc(), { rows, updatedAt: serverTimestamp() });
+}
+
+let refreshTimer;
+/**
+ * Call after an admin change that can affect points or names (attendance,
+ * manual points, events, members). Debounced so a burst of changes is
+ * recomputed once; runs in the background and never throws.
+ */
+export function refreshLeaderboardSoon() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(async () => {
+    try {
+      await saveLeaderboard(await computeLeaderboard());
+    } catch (err) {
+      console.warn('[leaderboard] refresh failed:', err?.code ?? err);
+    }
+  }, 800);
+}
+
+/** Any active member: the published leaderboard, or null if none yet. */
+export async function getPublishedLeaderboard() {
+  if (IS_DEMO) return null;
+  const snap = await getDoc(leaderboardDoc());
+  return snap.exists() ? snap.data() : null;
+}

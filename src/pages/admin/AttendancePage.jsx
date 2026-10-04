@@ -4,6 +4,7 @@ import { useAuth }               from '../../context/AuthContext';
 import { getEvent, getAttendanceForEvent, saveEventAttendance } from '../../services/eventService';
 import { getMembers }            from '../../services/memberService';
 import { useToast }              from '../../context/ToastContext';
+import { refreshLeaderboardSoon } from '../../services/leaderboardService';
 import LoadingSpinner            from '../../components/LoadingSpinner';
 import { formatDate, safeHttpsUrl } from '../../utils/helpers';
 import { getEventCategory }      from '../../data/pointsConfig';
@@ -92,6 +93,7 @@ function AttendancePage() {
       }));
       await saveEventAttendance(eventId, records, me.email);
       showToast('Attendance saved successfully.', 'success');
+      refreshLeaderboardSoon();
     } catch (err) {
       console.error(err);
       showToast('Failed to save attendance.', 'error');

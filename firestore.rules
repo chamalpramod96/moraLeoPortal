@@ -85,6 +85,16 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ── Published leaderboard ───────────────────────────────────────────────
+    // Summary (names, positions, points — no emails/phones) computed by admins
+    // from data members can't read directly. Everyone active can view it.
+    match /leaderboard/{docId} {
+      allow read:  if isActiveMember();
+      allow write: if isAdmin() &&
+        request.resource.data.rows is list &&
+        request.resource.data.rows.size() <= 1000;
+    }
+
     // ── Orientation Program files ───────────────────────────────────────────
     // Every active member can view; admins add and remove. The url must point
     // at Firebase Storage (rendered as a link for all members).
