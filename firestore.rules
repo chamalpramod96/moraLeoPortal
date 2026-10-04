@@ -6,28 +6,36 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Fetch the caller's member document (cached by Firestore per request)
-    function callerRole() {
-      return get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.role;
+    function callerDoc() {
+      return /databases/$(database)/documents/members/$(request.auth.token.email);
+    }
+
+    // Signed in AND listed as an active member. Firebase Auth sign-up has to
+    // stay open (members are created from the browser), so a bare login proves
+    // nothing — every data rule goes through this, and deactivating a member
+    // revokes their access here, not just in the UI.
+    function isActiveMember() {
+      return isAuthenticated() &&
+        exists(callerDoc()) &&
+        get(callerDoc()).data.isActive == true;
     }
 
     // secretary, president, or superAdmin  →  full admin access
     function isAdmin() {
-      return isAuthenticated() &&
-        exists(/databases/$(database)/documents/members/$(request.auth.token.email)) &&
-        callerRole() in ['secretary', 'president', 'superAdmin'];
+      return isActiveMember() &&
+        get(callerDoc()).data.role in ['secretary', 'president', 'superAdmin'];
     }
 
     // only superAdmin can touch accounts that carry the superAdmin role
     function isSuperAdmin() {
-      return isAuthenticated() &&
-        exists(/databases/$(database)/documents/members/$(request.auth.token.email)) &&
-        callerRole() == 'superAdmin';
+      return isActiveMember() &&
+        get(callerDoc()).data.role == 'superAdmin';
     }
 
     // ── Members ──────────────────────────────────────────────────────────────
     match /members/{memberEmail} {
-      // Any authenticated user reads their own doc; admins read all
+      // A user reads their own doc (even when inactive, so the app can show
+      // "access denied" and sign them out); admins read all
       allow read: if request.auth.token.email == memberEmail || isAdmin();
 
       // Any admin can create a member, UNLESS they're assigning the superAdmin role
@@ -43,7 +51,7 @@ service cloud.firestore {
       )) ||
         // A member may update ONLY their own profilePhoto field — nothing else
         // (role, isActive, email, etc. stay admin-only, preventing self-promotion).
-        (isAuthenticated() && request.auth.token.email == memberEmail &&
+        (isActiveMember() && request.auth.token.email == memberEmail &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profilePhoto']));
 
       // Only superAdmin can permanently delete a member account
@@ -52,13 +60,13 @@ service cloud.firestore {
 
     // ── Events ───────────────────────────────────────────────────────────────
     match /events/{eventId} {
-      allow read:                     if isAuthenticated();
+      allow read:                     if isActiveMember();
       allow create, update, delete:   if isAdmin();
     }
 
     // ── Attendance ───────────────────────────────────────────────────────────
     match /attendance/{attendanceId} {
-      allow read: if isAuthenticated() && (
+      allow read: if isActiveMember() && (
         resource.data.memberId == request.auth.token.email || isAdmin()
       );
       allow create, update, delete: if isAdmin();
@@ -66,7 +74,7 @@ service cloud.firestore {
 
     // ── Manual points ────────────────────────────────────────────────────────
     match /memberPoints/{pointId} {
-      allow read: if isAuthenticated() && (
+      allow read: if isActiveMember() && (
         resource.data.memberId == request.auth.token.email || isAdmin()
       );
       allow create, update, delete: if isAdmin();

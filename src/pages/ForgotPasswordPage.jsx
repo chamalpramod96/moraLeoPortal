@@ -23,13 +23,17 @@ function ForgotPasswordPage() {
     setError('');
     setMessage('');
 
+    // Same message whether or not the email is registered, so this page can't
+    // be used to discover which addresses have accounts.
+    const SENT_MSG = 'If this email is registered, a password reset link has been sent. Check your inbox and spam folder.';
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
       setSent(true);
-      setMessage('Password reset link sent! Check your email.');
+      setMessage(SENT_MSG);
     } catch (err) {
       if (err.code === 'auth/user-not-found') {
-        setError('No account found with this email.');
+        setSent(true);
+        setMessage(SENT_MSG);
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
       } else {

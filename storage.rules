@@ -2,22 +2,33 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // ── Helper: check if the caller has an admin role in Firestore ──────────
+    // ── Helpers: the caller's member record in Firestore ────────────────────
+    // A missing member doc makes firestore.get() fail, which denies access.
+    function callerMember() {
+      return firestore.get(
+        /databases/(default)/documents/members/$(request.auth.token.email)
+      ).data;
+    }
+
+    // Signed in AND an active member (sign-up is open, so a login alone
+    // proves nothing; deactivated members lose access here too)
+    function isActiveMember() {
+      return request.auth != null && callerMember().isActive == true;
+    }
+
     function isAdmin() {
-      return request.auth != null &&
-        firestore.get(
-          /databases/(default)/documents/members/$(request.auth.token.email)
-        ).data.role in ['secretary', 'president', 'superAdmin'];
+      return isActiveMember() &&
+        callerMember().role in ['secretary', 'president', 'superAdmin'];
     }
 
     // ── Profile photos ──────────────────────────────────────────────────────
     // Path: profiles/{email}/photo
-    // • Any authenticated user can READ (needed to display in portal, Word doc)
+    // • Any active member can READ (needed to display in portal, Word doc)
     // • Members can WRITE their own photo; admins can write any member's photo
     // • Max file size: 5 MB — enforced by rule
     match /profiles/{email}/photo {
-      allow read:  if request.auth != null;
-      allow write: if request.auth != null
+      allow read:  if isActiveMember();
+      allow write: if isActiveMember()
         && request.resource.size  < 5 * 1024 * 1024      // 5 MB max
         && request.resource.contentType.matches('image/.*')
         && (request.auth.token.email == email || isAdmin());
@@ -25,11 +36,11 @@ service firebase.storage {
 
     // ── Event photos ─────────────────────────────────────────────────────────
     // Path: events/{eventId}/{filename}
-    // • Any authenticated user can READ
+    // • Any active member can READ
     // • Only admins can WRITE / DELETE
     // • Max file size: 10 MB
     match /events/{eventId}/{filename} {
-      allow read:   if request.auth != null;
+      allow read:   if isActiveMember();
       allow write:  if isAdmin()
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
