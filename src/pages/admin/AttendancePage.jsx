@@ -68,14 +68,6 @@ function AttendancePage() {
     })();
   }, [eventId]);
 
-  const cycleStatus = (email) => {
-    setStatusMap(prev => {
-      const cur = prev[email] ?? 'absent';
-      const idx = STATUSES.indexOf(cur);
-      return { ...prev, [email]: STATUSES[(idx + 1) % STATUSES.length] };
-    });
-  };
-
   const setAllAttended = () => {
     setStatusMap(prev => {
       const next = { ...prev };

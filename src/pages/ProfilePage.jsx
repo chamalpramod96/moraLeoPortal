@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth }             from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
 import { getMemberManualPoints, computeMemberPoints } from '../services/pointsService';
-import { downloadMemberProfile } from '../services/wordExport';
 import { sendSetPasswordEmail } from '../services/memberService';
 import { useProfilePhoto }       from '../hooks/useProfilePhoto';
 import { useToast }            from '../context/ToastContext';
@@ -22,15 +21,17 @@ function ProfilePage() {
   const [downloading, setDownloading] = useState(false);
   const [pwSending,   setPwSending]   = useState(false);
 
+  // Keyed on email so a profile-photo change doesn't reload the whole page
+  const email = memberData?.email;
   useEffect(() => {
-    if (!memberData) return;
+    if (!email) return;
     (async () => {
       setLoading(true);
       try {
         const [evList, attList, mp] = await Promise.all([
           getEvents(),
-          getMemberAttendance(memberData.email),
-          getMemberManualPoints(memberData.email),
+          getMemberAttendance(email),
+          getMemberManualPoints(email),
         ]);
         setEvents(evList);
         setAttendance(attList);
@@ -39,12 +40,13 @@ function ProfilePage() {
         setLoading(false);
       }
     })();
-  // Keyed on email so a profile-photo change doesn't reload the whole page
-  }, [memberData?.email]);
+  }, [email]);
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
+      // Loaded on demand: the Word library is ~90 KB that most visits never use
+      const { downloadMemberProfile } = await import('../services/wordExport');
       await downloadMemberProfile(memberData, events, attendance);
       showToast('Profile downloaded successfully!', 'success');
     } catch (err) {

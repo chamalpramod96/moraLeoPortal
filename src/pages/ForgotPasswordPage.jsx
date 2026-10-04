@@ -7,7 +7,6 @@ import logo from '../assets/47OfficialLogo-web.png';
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   const navigate = useNavigate();
@@ -21,19 +20,15 @@ function ForgotPasswordPage() {
 
     setLoading(true);
     setError('');
-    setMessage('');
 
-    // Same message whether or not the email is registered, so this page can't
-    // be used to discover which addresses have accounts.
-    const SENT_MSG = 'If this email is registered, a password reset link has been sent. Check your inbox and spam folder.';
+    // The "sent" screen is the same whether or not the email is registered,
+    // so this page can't be used to discover which addresses have accounts.
     try {
       await sendPasswordResetEmail(auth, email.trim().toLowerCase());
       setSent(true);
-      setMessage(SENT_MSG);
     } catch (err) {
       if (err.code === 'auth/user-not-found') {
         setSent(true);
-        setMessage(SENT_MSG);
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
       } else {
@@ -153,10 +148,10 @@ function ForgotPasswordPage() {
                   Check Your Email
                 </h2>
                 <p className="text-portal-muted text-sm">
-                  We've sent a password reset link to <strong>{email}</strong>
+                  If <strong>{email}</strong> is registered, we've sent a password reset link to it.
                 </p>
                 <p className="text-portal-muted text-xs mt-3">
-                  Click the link in your email to create a new password. The link expires in 1 hour.
+                  Check your inbox and spam folder. The link expires in 1 hour.
                 </p>
               </div>
 

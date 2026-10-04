@@ -9,7 +9,6 @@ import { uploadEventPhoto, deleteEventPhoto } from '../../services/storageServic
 import { useToast }             from '../../context/ToastContext';
 import { refreshLeaderboardSoon } from '../../services/leaderboardService';
 import Modal                    from '../../components/Modal';
-import ConfirmDialog            from '../../components/ConfirmDialog';
 import { auth }                 from '../../services/firebase';
 import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import LoadingSpinner           from '../../components/LoadingSpinner';

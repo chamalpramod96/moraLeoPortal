@@ -25,14 +25,16 @@ function DashboardPage() {
   const [manualPts,  setManualPts]  = useState([]);
   const [loading,    setLoading]    = useState(true);
 
+  // Keyed on email so a profile-photo change doesn't refetch everything
+  const email = memberData?.email;
   useEffect(() => {
-    if (!memberData) return;
+    if (!email) return;
     (async () => {
       try {
         const [evList, attList, mp] = await Promise.all([
           getEvents(),
-          getMemberAttendance(memberData.email),
-          getMemberManualPoints(memberData.email),
+          getMemberAttendance(email),
+          getMemberManualPoints(email),
         ]);
         setEvents(evList);
         setAttendance(attList);
@@ -41,8 +43,7 @@ function DashboardPage() {
         setLoading(false);
       }
     })();
-  // Keyed on email so a profile-photo change doesn't refetch everything
-  }, [memberData?.email]);
+  }, [email]);
 
   // Rate over the events this member was marked for (same as Profile and the
   // Word export) — not all events, which would count future/unmarked ones.

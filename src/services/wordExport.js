@@ -15,7 +15,6 @@ const GOLD  = 'C9A84C';
 const WHITE = 'F0F0F0';
 const GREY  = '888888';
 const BLACK = '1A1A1A';
-const BG    = 'F9F5F0';
 
 // ── Border helpers ─────────────────────────────────────────────────────────
 const solidBorder = (color = GOLD, size = 6) => ({
@@ -33,21 +32,6 @@ const tableBorders = () => ({
 });
 
 // ── Reusable paragraph helpers ─────────────────────────────────────────────
-const centeredText = (text, opts = {}) =>
-  new Paragraph({
-    alignment: AlignmentType.CENTER,
-    spacing:   { before: opts.before ?? 100, after: opts.after ?? 100 },
-    children:  [
-      new TextRun({
-        text,
-        size:    opts.size   ?? 22,
-        color:   opts.color  ?? BLACK,
-        bold:    opts.bold   ?? false,
-        italics: opts.italics ?? false,
-      }),
-    ],
-  });
-
 const sectionHeading = (text) =>
   new Paragraph({
     spacing: { before: 300, after: 120 },

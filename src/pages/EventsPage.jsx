@@ -16,13 +16,14 @@ function EventsPage() {
   const [category,    setCategory]   = useState('All');
   const [dateFrom,    setDateFrom]   = useState('');
 
+  const email = memberData?.email;
   useEffect(() => {
-    if (!memberData) return;
+    if (!email) return;
     (async () => {
       try {
         const [evList, attList] = await Promise.all([
           getEvents(),
-          getMemberAttendance(memberData.email),
+          getMemberAttendance(email),
         ]);
         setEvents(evList);
         setAttendance(attList);
@@ -30,7 +31,7 @@ function EventsPage() {
         setLoading(false);
       }
     })();
-  }, [memberData?.email]);
+  }, [email]);
 
   const filtered = useMemo(() => {
     return events.filter(ev => {
