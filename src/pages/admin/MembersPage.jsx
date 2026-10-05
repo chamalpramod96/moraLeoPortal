@@ -14,7 +14,6 @@ import LoadingSpinner         from '../../components/LoadingSpinner';
 import MemberAvatar           from '../../components/MemberAvatar';
 import MemberForm, { EMPTY_MEMBER_FORM } from './MemberForm';
 import ManualPointsModal      from './ManualPointsModal';
-import ImportMembersModal     from './ImportMembersModal';
 import { ROLES, assignableRoles } from '../../data/roles';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -57,7 +56,6 @@ function MembersPage() {
   const [filterActive, setFilterActive] = useState('all'); // 'all' | 'active' | 'inactive'
 
   const [showAdd,      setShowAdd]      = useState(false);
-  const [showImport,   setShowImport]   = useState(false);  // Add CSV File
   const [editItem,     setEditItem]     = useState(null);   // member object to edit
   const [formError,    setFormError]    = useState('');
   const [saving,       setSaving]       = useState(false);
@@ -196,18 +194,11 @@ function MembersPage() {
           <h1 className="text-xl font-bold text-portal-text">Members</h1>
           <p className="text-portal-muted text-xs mt-0.5">{members.length} total members</p>
         </div>
-        <div className="sm:ml-auto flex flex-wrap gap-2">
-          <button onClick={() => setShowImport(true)}
-            className="border border-portal-gold/50 text-portal-gold hover:bg-portal-gold/10 font-semibold
-                       px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors">
-            <i className="fa-solid fa-file-csv" /> Add CSV File
-          </button>
-          <button onClick={openAdd}
-            className="bg-portal-red hover:bg-portal-red-dark text-white font-semibold
-                       px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors">
-            <i className="fa-solid fa-user-plus" /> Add Member
-          </button>
-        </div>
+        <button onClick={openAdd}
+          className="sm:ml-auto bg-portal-red hover:bg-portal-red-dark text-white font-semibold
+                     px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors">
+          <i className="fa-solid fa-user-plus" /> Add Member
+        </button>
       </div>
 
       {/* Filters */}
@@ -317,17 +308,6 @@ function MembersPage() {
           key={pointsTarget.email}
           member={pointsTarget}
           onClose={() => setPointsTarget(null)}
-        />
-      )}
-
-      {/* Add members from a CSV file — refresh the list afterwards if any were added */}
-      {showImport && (
-        <ImportMembersModal
-          existingMembers={_members}
-          onClose={(imported) => {
-            setShowImport(false);
-            if (imported) refetch();
-          }}
         />
       )}
 
