@@ -1,6 +1,7 @@
 const STYLES = {
   // attendance
   attended:  'bg-green-900/40  text-green-400  border border-green-600/30',
+  attended_online: 'bg-sky-900/40 text-sky-400 border border-sky-600/30',
   absent:    'bg-red-900/40    text-red-400    border border-red-600/30',
   excused:   'bg-yellow-900/40 text-yellow-400 border border-yellow-500/30',
   // role
@@ -17,6 +18,7 @@ const STYLES = {
 
 const LABELS = {
   attended:  'Attended',
+  attended_online: 'Attended (Online)',
   absent:    'Absent',
   excused:   'Excused',
   superadmin: 'Super Admin',

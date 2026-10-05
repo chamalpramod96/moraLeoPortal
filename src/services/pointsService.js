@@ -4,6 +4,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { MOCK_MEMBER_POINTS } from '../data/mockData';
+import { isAttended, isHybridEvent, getEventCategory } from '../data/pointsConfig';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 
@@ -48,11 +49,21 @@ export async function deleteManualPoints(pointId) {
  */
 export function calcEventPoints(memberEmail, attendance, events) {
   return attendance
-    .filter(a => a.memberId === memberEmail.toLowerCase() && a.status === 'attended')
-    .reduce((sum, a) => {
-      const ev = events.find(e => e.id === a.eventId);
-      return sum + (ev?.pointsValue ?? 0);
-    }, 0);
+    .filter(a => a.memberId === memberEmail.toLowerCase() && isAttended(a.status))
+    .reduce((sum, a) => sum + eventPointsFor(a.status, events.find(e => e.id === a.eventId)), 0);
+}
+
+/**
+ * Points one attendance record earns. Joining a hybrid meeting online earns
+ * the event's online points (stored on the event, falling back to the
+ * category's); if the event is no longer hybrid, online counts as attended.
+ */
+export function eventPointsFor(status, ev) {
+  if (!ev || !isAttended(status)) return 0;
+  if (status === 'attended_online' && isHybridEvent(ev)) {
+    return Number(ev.onlinePointsValue ?? getEventCategory(ev.pointsCategory)?.onlinePoints ?? 0);
+  }
+  return Number(ev.pointsValue ?? 0);
 }
 
 /**

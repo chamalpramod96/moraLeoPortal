@@ -4,18 +4,19 @@
  */
 
 // ─── Level Thresholds (ascending total points) ────────────────────────────────
+// `unlock` is the title shown next to a level — only the top three have one.
 export const LEVELS = [
-  { level: 0,  minPoints: 0,       label: 'Prospect', color: 'text-gray-400',        bg: 'bg-gray-700/30',        border: 'border-gray-600/30',   unlock: 'Completing Prospect Period'    },
-  { level: 1,  minPoints: 1000,    label: 'Level 01', color: 'text-yellow-400',       bg: 'bg-yellow-900/30',      border: 'border-yellow-600/30', unlock: 'Leo Member'                    },
-  { level: 2,  minPoints: 2000,    label: 'Level 02', color: 'text-yellow-300',       bg: 'bg-yellow-900/30',      border: 'border-yellow-500/30', unlock: ''                              },
-  { level: 3,  minPoints: 4000,    label: 'Level 03', color: 'text-blue-400',         bg: 'bg-blue-900/30',        border: 'border-blue-600/30',   unlock: 'Club BOD / Club Assistant'     },
-  { level: 4,  minPoints: 7000,    label: 'Level 04', color: 'text-blue-300',         bg: 'bg-blue-900/30',        border: 'border-blue-500/30',   unlock: 'Club Secretary / Treasurer'    },
-  { level: 5,  minPoints: 10000,   label: 'Level 05', color: 'text-purple-400',       bg: 'bg-purple-900/30',      border: 'border-purple-600/30', unlock: '2nd Vice President'            },
-  { level: 6,  minPoints: 15000,   label: 'Level 06', color: 'text-purple-300',       bg: 'bg-purple-900/30',      border: 'border-purple-500/30', unlock: '1st Vice President'            },
-  { level: 7,  minPoints: 20000,   label: 'Level 07', color: 'text-portal-red',       bg: 'bg-portal-red/20',      border: 'border-portal-red/30', unlock: 'Club President'                },
-  { level: 8,  minPoints: 30000,   label: 'Level 08', color: 'text-orange-400',       bg: 'bg-orange-900/30',      border: 'border-orange-600/30', unlock: ''                              },
-  { level: 9,  minPoints: 50000,   label: 'Level 09', color: 'text-portal-gold',      bg: 'bg-portal-gold/20',     border: 'border-portal-gold/30',unlock: ''                              },
-  { level: 10, minPoints: 100000,  label: 'Level 10', color: 'text-portal-gold-light',bg: 'bg-portal-gold/30',     border: 'border-portal-gold/50',unlock: 'Leo Legend'                    },
+  { level: 0,  minPoints: 0,       label: 'Prospect', color: 'text-gray-400',        bg: 'bg-gray-700/30',        border: 'border-gray-600/30',   unlock: ''           },
+  { level: 1,  minPoints: 1000,    label: 'Level 01', color: 'text-yellow-400',       bg: 'bg-yellow-900/30',      border: 'border-yellow-600/30', unlock: ''           },
+  { level: 2,  minPoints: 2000,    label: 'Level 02', color: 'text-yellow-300',       bg: 'bg-yellow-900/30',      border: 'border-yellow-500/30', unlock: ''           },
+  { level: 3,  minPoints: 4000,    label: 'Level 03', color: 'text-blue-400',         bg: 'bg-blue-900/30',        border: 'border-blue-600/30',   unlock: ''           },
+  { level: 4,  minPoints: 7000,    label: 'Level 04', color: 'text-blue-300',         bg: 'bg-blue-900/30',        border: 'border-blue-500/30',   unlock: ''           },
+  { level: 5,  minPoints: 10000,   label: 'Level 05', color: 'text-purple-400',       bg: 'bg-purple-900/30',      border: 'border-purple-600/30', unlock: ''           },
+  { level: 6,  minPoints: 15000,   label: 'Level 06', color: 'text-purple-300',       bg: 'bg-purple-900/30',      border: 'border-purple-500/30', unlock: ''           },
+  { level: 7,  minPoints: 20000,   label: 'Level 07', color: 'text-portal-red',       bg: 'bg-portal-red/20',      border: 'border-portal-red/30', unlock: ''           },
+  { level: 8,  minPoints: 30000,   label: 'Level 08', color: 'text-orange-400',       bg: 'bg-orange-900/30',      border: 'border-orange-600/30', unlock: 'Leo Star'   },
+  { level: 9,  minPoints: 50000,   label: 'Level 09', color: 'text-portal-gold',      bg: 'bg-portal-gold/20',     border: 'border-portal-gold/30',unlock: 'Leo Master' },
+  { level: 10, minPoints: 100000,  label: 'Level 10', color: 'text-portal-gold-light',bg: 'bg-portal-gold/30',     border: 'border-portal-gold/50',unlock: 'Leo Legend' },
 ];
 
 /**
@@ -36,18 +37,21 @@ export function getLevelInfo(totalPoints) {
 }
 
 // ─── Event Point Categories (Participation) ───────────────────────────────────
-// These are assigned per event. Attendance (status='attended') earns these points.
+// These are assigned per event. Attendance earns these points.
+// • hybrid: members are marked Physical ('attended', `points`) or Online
+//   ('attended_online', `onlinePoints`).
+// • retired: no longer offered for new events, but kept so past events that
+//   used them still show their name (their points are stored on the event).
 export const EVENT_POINT_CATEGORIES = [
   // Club Meetings
   { id: 'club_meeting_physical',      label: 'Club Meeting – Physical',                  group: 'Club Meetings',              points: 100 },
   { id: 'club_meeting_online',        label: 'Club Meeting – Online',                    group: 'Club Meetings',              points: 50  },
-  { id: 'club_meeting_board',         label: 'Board Meeting',                            group: 'Club Meetings',              points: 50  },
-  // Club Projects / Events
-  { id: 'club_project_service',       label: 'Club Project – Service',                   group: 'Club Projects / Events',     points: 25  },
-  { id: 'club_project_fundraising',   label: 'Club Project – Fundraising',               group: 'Club Projects / Events',     points: 30  },
-  { id: 'club_project_online',        label: 'Club Project – Online',                    group: 'Club Projects / Events',     points: 10  },
-  { id: 'club_project_fellowship',    label: 'Club Project – Fellowship / Events',       group: 'Club Projects / Events',     points: 20  },
-  { id: 'club_project_international', label: 'Club Project – International',             group: 'Club Projects / Events',     points: 15  },
+  { id: 'club_meeting_hybrid',        label: 'Club Meeting – Hybrid',                    group: 'Club Meetings',              points: 100, onlinePoints: 50, hybrid: true },
+  // Club Projects
+  { id: 'club_project_fundraising',   label: 'Club Project – Fundraising',               group: 'Club Projects',              points: 30  },
+  { id: 'club_project_service',       label: 'Club Project – Service',                   group: 'Club Projects',              points: 25  },
+  { id: 'club_project_international', label: 'Club Project – International',             group: 'Club Projects',              points: 15  },
+  { id: 'club_project_online',        label: 'Club Project – Online',                    group: 'Club Projects',              points: 10  },
   // Other Club Projects
   { id: 'other_intra_physical',       label: 'Other Club – Intra District (Physical)',   group: 'Other Club Projects/Events', points: 50  },
   { id: 'other_intra_online',         label: 'Other Club – Intra District (Online)',     group: 'Other Club Projects/Events', points: 25  },
@@ -67,7 +71,21 @@ export const EVENT_POINT_CATEGORIES = [
   { id: 'md_event_physical',          label: 'Multiple District Event (Physical)',        group: 'Multiple District',          points: 300 },
   { id: 'md_event_online',            label: 'Multiple District Event (Online)',          group: 'Multiple District',          points: 100 },
   { id: 'md_conference',              label: 'Multiple District Conference',              group: 'Multiple District',          points: 500 },
+  // Retired (hidden from new events)
+  { id: 'club_meeting_board',         label: 'Board Meeting',                            group: 'Club Meetings',              points: 50, retired: true },
+  { id: 'club_project_fellowship',    label: 'Club Project – Fellowship / Events',       group: 'Club Projects',              points: 20, retired: true },
 ];
+
+/** Categories offered for new events and shown in the Points Table. */
+export const ACTIVE_EVENT_POINT_CATEGORIES = EVENT_POINT_CATEGORIES.filter(c => !c.retired);
+
+// ─── Attendance statuses ──────────────────────────────────────────────────────
+// 'attended' = present (physical, for hybrid meetings); 'attended_online' =
+// joined a hybrid meeting online. Both count as attending.
+export const isAttended = (status) => status === 'attended' || status === 'attended_online';
+
+/** True if the event's points category is a hybrid meeting. */
+export const isHybridEvent = (event) => !!getEventCategory(event?.pointsCategory)?.hybrid;
 
 // ─── Manual Point Categories (Involvements, Achievements, Growth) ─────────────
 export const MANUAL_POINT_CATEGORIES = [
@@ -157,9 +175,11 @@ export function getManualCategory(id) {
 }
 
 // ─── Group EVENT categories for dropdown <optgroup> ──────────────────────────
-export function groupedEventCategories() {
+// Retired categories are left out, except `keepId` (the category an event
+// being edited already uses), so its current value still shows.
+export function groupedEventCategories(keepId) {
   const groups = {};
-  for (const cat of EVENT_POINT_CATEGORIES) {
+  for (const cat of EVENT_POINT_CATEGORIES.filter(c => !c.retired || c.id === keepId)) {
     if (!groups[cat.group]) groups[cat.group] = [];
     groups[cat.group].push(cat);
   }

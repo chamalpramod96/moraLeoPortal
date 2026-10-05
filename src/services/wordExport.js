@@ -8,6 +8,7 @@ import {
   Header, Footer, ImageRun,
 } from 'docx';
 import { saveAs } from 'file-saver';
+import { isAttended } from '../data/pointsConfig';
 
 // ── Color constants (hex, no #) ────────────────────────────────────────────
 const RED   = 'CC0000';
@@ -76,10 +77,13 @@ const dataCell = (text, color = BLACK, bold = false, widthPct) =>
 
 // ── Status color map ───────────────────────────────────────────────────────
 const STATUS_COLORS = {
-  attended: '006633',
-  absent:   'CC0000',
-  excused:  'AA7700',
+  attended:        '006633',
+  attended_online: '0077AA',
+  absent:          'CC0000',
+  excused:         'AA7700',
 };
+
+const STATUS_LABELS = { attended_online: 'Attended (Online)' };
 
 // ── Image helpers ─────────────────────────────────────────────────────────
 // Word embeds JPEG/PNG/GIF. The format is read from the file's first bytes —
@@ -179,7 +183,7 @@ export async function downloadMemberProfile(member, events, attendance) {
 
   // ── Fetch one photo per attended event (parallel) ────────────────────────
   const attendedEventIds = [...new Set(
-    attendance.filter(a => a.status === 'attended').map(a => a.eventId)
+    attendance.filter(a => isAttended(a.status)).map(a => a.eventId)
   )];
   const eventPhotoResults = await Promise.all(
     attendedEventIds.map(async (eventId) => {
@@ -276,9 +280,8 @@ export async function downloadMemberProfile(member, events, attendance) {
   const attendanceRows = attendance.map((record, idx) => {
     const event  = events.find(e => e.id === record.eventId);
     const color  = STATUS_COLORS[record.status] ?? GREY;
-    const status = record.status
-      ? record.status.charAt(0).toUpperCase() + record.status.slice(1)
-      : 'N/A';
+    const status = STATUS_LABELS[record.status]
+      ?? (record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : 'N/A');
 
     return new TableRow({
       children: [
@@ -291,7 +294,7 @@ export async function downloadMemberProfile(member, events, attendance) {
     });
   });
 
-  const attended = attendance.filter(a => a.status === 'attended').length;
+  const attended = attendance.filter(a => isAttended(a.status)).length;
   const total    = attendance.length;
   const rate     = total ? Math.round((attended / total) * 100) : 0;
 

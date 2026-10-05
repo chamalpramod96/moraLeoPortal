@@ -17,7 +17,7 @@ import EventFormIsolated        from './EventFormIsolated';
 
 const EMPTY_FORM = {
   title: '', description: '', date: '', location: '', category: 'Service',
-  pointsCategory: '', pointsValue: 0,
+  pointsCategory: '', pointsValue: 0, onlinePointsValue: 0,
   existingPhotos: [],   // [{ url, type, caption }] — already saved
   newPhotoFiles:  [],   // [{ file, preview, type, caption }] — newly selected
 };
@@ -68,6 +68,7 @@ function AdminEventsPage() {
       date:           dateStr,
       pointsCategory: ev.pointsCategory ?? '',
       pointsValue:    ev.pointsValue    ?? 0,
+      onlinePointsValue: ev.onlinePointsValue ?? 0,
       existingPhotos: ev.photos         ?? [],
       newPhotoFiles:  [],
     });

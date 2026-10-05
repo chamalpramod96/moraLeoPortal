@@ -39,6 +39,8 @@ export async function addEvent(eventData, createdBy) {
     category:       eventData.category       ?? 'Service',
     pointsCategory: eventData.pointsCategory ?? '',
     pointsValue:    Number(eventData.pointsValue ?? 0),
+    // Online points for hybrid meetings (0 for other categories)
+    onlinePointsValue: Number(eventData.onlinePointsValue ?? 0),
     photos:         eventData.photos         ?? [],
     createdBy,
     createdAt:      serverTimestamp(),
@@ -53,6 +55,7 @@ export async function updateEvent(eventId, updates) {
     payload.date = Timestamp.fromDate(new Date(updates.date + 'T00:00:00'));
   }
   if (updates.pointsValue !== undefined) payload.pointsValue = Number(updates.pointsValue);
+  if (updates.onlinePointsValue !== undefined) payload.onlinePointsValue = Number(updates.onlinePointsValue);
   await updateDoc(doc(db, 'events', eventId), payload);
 }
 

@@ -7,6 +7,7 @@ import { useProfilePhoto }              from '../hooks/useProfilePhoto';
 import Badge                             from '../components/Badge';
 import LoadingSpinner                    from '../components/LoadingSpinner';
 import { formatDateShort, calcAttendanceRate, PHOTO_ACCEPT } from '../utils/helpers';
+import { isAttended }                    from '../data/pointsConfig';
 
 function StatCard({ value, label, color = 'text-portal-gold' }) {
   return (
@@ -47,7 +48,7 @@ function DashboardPage() {
 
   // Rate over the events this member was marked for (same as Profile and the
   // Word export) — not all events, which would count future/unmarked ones.
-  const attendedCount  = attendance.filter(a => a.status === 'attended').length;
+  const attendedCount  = attendance.filter(a => isAttended(a.status)).length;
   const attendanceRate = calcAttendanceRate(attendedCount, attendance.length);
 
   // Total = event participation + manual points, same as Points Table/Leaderboard

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth }                from '../context/AuthContext';
 import LoadingSpinner             from '../components/LoadingSpinner';
-import { EVENT_POINT_CATEGORIES, MANUAL_POINT_CATEGORIES, LEVELS, getLevelInfo } from '../data/pointsConfig';
+import { ACTIVE_EVENT_POINT_CATEGORIES, MANUAL_POINT_CATEGORIES, LEVELS, getLevelInfo } from '../data/pointsConfig';
 import { computeMemberPoints, getMemberManualPoints } from '../services/pointsService';
 import { getMemberAttendance, getEvents }              from '../services/eventService';
 
@@ -43,8 +43,15 @@ function PointsGroup({ categories }) {
                 {items.map((cat, i) => (
                   <tr key={cat.id} className={i % 2 === 0 ? 'bg-white/[0.02]' : ''}>
                     <td className="px-4 py-2.5 text-portal-text">{cat.label}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      {cat.points > 0
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                      {cat.hybrid ? (
+                        <span className="text-xs">
+                          <span className="text-portal-gold font-bold">+{cat.points}</span>
+                          <span className="text-portal-muted"> physical · </span>
+                          <span className="text-portal-gold font-bold">+{cat.onlinePoints}</span>
+                          <span className="text-portal-muted"> online</span>
+                        </span>
+                      ) : cat.points > 0
                         ? <span className="text-portal-gold font-bold">+{cat.points}</span>
                         : <span className="text-portal-muted text-xs italic">custom</span>
                       }
@@ -176,7 +183,7 @@ export default function PointsTablePage() {
           These points are automatically added when the Secretary marks your attendance as
           <span className="text-green-400 font-semibold"> Attended</span> for an event.
         </p>
-        <PointsGroup categories={EVENT_POINT_CATEGORIES} />
+        <PointsGroup categories={ACTIVE_EVENT_POINT_CATEGORIES} />
       </Section>
 
       {/* ── Manual / involvement points ── */}

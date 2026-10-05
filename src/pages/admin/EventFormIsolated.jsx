@@ -4,7 +4,7 @@ import { PHOTO_ACCEPT, isAllowedPhoto } from '../../utils/helpers';
 
 const EMPTY_FORM = {
   title: '', description: '', date: '', location: '', category: 'Service',
-  pointsCategory: '', pointsValue: 0,
+  pointsCategory: '', pointsValue: 0, onlinePointsValue: 0,
   existingPhotos: [],
   newPhotoFiles: [],
 };
@@ -43,7 +43,8 @@ function EventFormIsolated({
     setFormState(prev => ({
       ...prev,
       pointsCategory: id,
-      pointsValue: cat?.points ?? 0
+      pointsValue: cat?.points ?? 0,
+      onlinePointsValue: cat?.onlinePoints ?? 0,
     }));
   };
 
@@ -196,10 +197,15 @@ function EventFormIsolated({
                      text-portal-text text-sm focus:outline-none focus:border-portal-gold/50"
         >
           <option value="">— No points for this event —</option>
-          {Object.entries(groupedEventCategories()).map(([group, cats]) => (
+          {Object.entries(groupedEventCategories(formState.pointsCategory)).map(([group, cats]) => (
             <optgroup key={group} label={group}>
               {cats.map(c => (
-                <option key={c.id} value={c.id}>{c.label} (+{c.points} pts)</option>
+                <option key={c.id} value={c.id}>
+                  {c.label} {c.hybrid
+                    ? `(+${c.points} physical / +${c.onlinePoints} online)`
+                    : `(+${c.points} pts)`}
+                  {c.retired ? ' — no longer used' : ''}
+                </option>
               ))}
             </optgroup>
           ))}
@@ -207,7 +213,10 @@ function EventFormIsolated({
         {formState.pointsCategory && (
           <p className="text-xs text-portal-gold mt-1">
             <i className="fa-solid fa-star mr-1" />
-            Attending members will each earn <strong>{formState.pointsValue}</strong> points.
+            {getEventCategory(formState.pointsCategory)?.hybrid
+              ? <>Members who attend <strong>in person</strong> earn <strong>{formState.pointsValue}</strong> points;
+                  {' '}those who join <strong>online</strong> earn <strong>{formState.onlinePointsValue ?? 0}</strong>.</>
+              : <>Attending members will each earn <strong>{formState.pointsValue}</strong> points.</>}
           </p>
         )}
       </div>

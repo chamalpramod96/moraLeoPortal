@@ -7,7 +7,7 @@ import { useProfilePhoto }       from '../hooks/useProfilePhoto';
 import { useToast }            from '../context/ToastContext';
 import Badge                   from '../components/Badge';
 import LoadingSpinner          from '../components/LoadingSpinner';
-import { getManualCategory }   from '../data/pointsConfig';
+import { getManualCategory, isAttended } from '../data/pointsConfig';
 import { formatDate, formatDateShort, calcAttendanceRate, PHOTO_ACCEPT } from '../utils/helpers';
 
 function ProfilePage() {
@@ -73,7 +73,7 @@ function ProfilePage() {
 
   if (loading) return <LoadingSpinner />;
 
-  const attended  = attendance.filter(a => a.status === 'attended').length;
+  const attended  = attendance.filter(a => isAttended(a.status)).length;
   const rate      = calcAttendanceRate(attended, attendance.length);
 
   // Total = event participation + manual points, same as Points Table/Leaderboard

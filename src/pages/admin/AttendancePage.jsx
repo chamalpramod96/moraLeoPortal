@@ -7,20 +7,30 @@ import { useToast }              from '../../context/ToastContext';
 import { refreshLeaderboardSoon } from '../../services/leaderboardService';
 import LoadingSpinner            from '../../components/LoadingSpinner';
 import { formatDate, safeHttpsUrl } from '../../utils/helpers';
-import { getEventCategory }      from '../../data/pointsConfig';
+import { getEventCategory, isHybridEvent } from '../../data/pointsConfig';
 
-const STATUSES = ['attended', 'absent', 'excused'];
+// Hybrid club meetings record *how* a member attended: Physical earns the full
+// points, Online earns the event's online points.
+const STATUSES        = ['attended', 'absent', 'excused'];
+const HYBRID_STATUSES = ['attended', 'attended_online', 'absent', 'excused'];
+
+const STATUS_LABELS = {
+  attended: 'Attended', attended_online: 'Online', absent: 'Absent', excused: 'Excused',
+};
+const HYBRID_LABELS = { ...STATUS_LABELS, attended: 'Physical' };
 
 const STATUS_STYLES = {
-  attended: 'bg-green-900/40 border-green-600/40 text-green-400',
-  absent:   'bg-red-900/40   border-red-600/40   text-red-400',
-  excused:  'bg-yellow-900/40 border-yellow-600/40 text-yellow-400',
+  attended:        'bg-green-900/40 border-green-600/40 text-green-400',
+  attended_online: 'bg-sky-900/40   border-sky-600/40   text-sky-400',
+  absent:          'bg-red-900/40   border-red-600/40   text-red-400',
+  excused:         'bg-yellow-900/40 border-yellow-600/40 text-yellow-400',
 };
 
 const STATUS_ICONS = {
-  attended: 'fa-circle-check',
-  absent:   'fa-circle-xmark',
-  excused:  'fa-circle-minus',
+  attended:        'fa-circle-check',
+  attended_online: 'fa-laptop',
+  absent:          'fa-circle-xmark',
+  excused:         'fa-circle-minus',
 };
 
 function AttendancePage() {
@@ -55,11 +65,14 @@ function AttendancePage() {
         const active = mems.filter(m => m.isActive);
         setBaseMembers(active);
 
-        // Build initial status map: use existing records, default to 'absent'
+        // Build initial status map: use existing records, default to 'absent'.
+        // If the event is no longer hybrid, an "online" mark shows as attended.
+        const hybrid = isHybridEvent(ev);
         const map = {};
         active.forEach(m => {
           const rec = existing.find(a => a.memberId === m.email);
-          map[m.email] = rec?.status ?? 'absent';
+          const status = rec?.status ?? 'absent';
+          map[m.email] = !hybrid && status === 'attended_online' ? 'attended' : status;
         });
         setStatusMap(map);
       } finally {
@@ -104,10 +117,13 @@ function AttendancePage() {
     </div>
   );
 
-  const counts = {
-    attended: Object.values(statusMap).filter(s => s === 'attended').length,
-    absent:   Object.values(statusMap).filter(s => s === 'absent').length,
-    excused:  Object.values(statusMap).filter(s => s === 'excused').length,
+  const hybrid   = isHybridEvent(event);
+  const statuses = hybrid ? HYBRID_STATUSES : STATUSES;
+  const labels   = hybrid ? HYBRID_LABELS : STATUS_LABELS;
+  const count    = (s) => Object.values(statusMap).filter(v => v === s).length;
+  const counts   = {
+    attended: count('attended'), attended_online: count('attended_online'),
+    absent:   count('absent'),   excused:         count('excused'),
   };
 
   return (
@@ -132,7 +148,10 @@ function AttendancePage() {
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg
                           bg-portal-gold/10 border border-portal-gold/30 text-portal-gold text-sm">
             <i className="fa-solid fa-trophy" />
-            Attendance earns <strong>{event.pointsValue ?? 0} points</strong>
+            {hybrid
+              ? <span>Physical earns <strong>{event.pointsValue ?? 0}</strong> · Online earns{' '}
+                  <strong>{event.onlinePointsValue ?? getEventCategory(event.pointsCategory)?.onlinePoints ?? 0}</strong> points</span>
+              : <span>Attendance earns <strong>{event.pointsValue ?? 0} points</strong></span>}
             <span className="text-portal-muted text-xs">
               ({getEventCategory(event.pointsCategory)?.label ?? event.pointsCategory})
             </span>
@@ -173,8 +192,14 @@ function AttendancePage() {
         <div className="flex gap-3 flex-wrap">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-900/30 border border-green-600/30">
             <i className="fa-solid fa-circle-check text-green-400 text-sm" />
-            <span className="text-green-400 text-sm font-medium">{counts.attended} Attended</span>
+            <span className="text-green-400 text-sm font-medium">{counts.attended} {labels.attended}</span>
           </div>
+          {hybrid && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-900/30 border border-sky-600/30">
+              <i className="fa-solid fa-laptop text-sky-400 text-sm" />
+              <span className="text-sky-400 text-sm font-medium">{counts.attended_online} Online</span>
+            </div>
+          )}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-900/30 border border-red-600/30">
             <i className="fa-solid fa-circle-xmark text-red-400 text-sm" />
             <span className="text-red-400 text-sm font-medium">{counts.absent} Absent</span>
@@ -190,7 +215,7 @@ function AttendancePage() {
           <button onClick={setAllAttended}
             className="border border-portal-gold/35 text-portal-gold hover:bg-portal-gold/10
                        px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-colors">
-            <i className="fa-solid fa-check-double" /> All Attended
+            <i className="fa-solid fa-check-double" /> {hybrid ? 'All Physical' : 'All Attended'}
           </button>
           <button onClick={handleSave} disabled={saving}
             className="bg-portal-red hover:bg-portal-red-dark disabled:opacity-50 text-white
@@ -206,7 +231,8 @@ function AttendancePage() {
       {/* ── Member list ─────────────────────────────────────────────── */}
       <div className="card rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-subtle text-xs text-portal-muted uppercase tracking-wide font-medium">
-          {members.length} Active Members — click status to cycle between Attended → Absent → Excused
+          {members.length} Active Members — choose each member's status
+          {hybrid && ' (Physical or Online for this hybrid meeting)'}
         </div>
 
         {members.length === 0 ? (
@@ -240,7 +266,7 @@ function AttendancePage() {
 
                   {/* Status toggle buttons */}
                   <div className="flex gap-2 flex-shrink-0 ml-4">
-                    {STATUSES.map(s => (
+                    {statuses.map(s => (
                       <button
                         key={s}
                         onClick={() => setStatusMap(prev => ({ ...prev, [m.email]: s }))}
@@ -252,9 +278,7 @@ function AttendancePage() {
                                     }`}
                       >
                         <i className={`fa-solid ${STATUS_ICONS[s]}`} />
-                        <span className="hidden sm:inline">
-                          {s.charAt(0).toUpperCase() + s.slice(1)}
-                        </span>
+                        <span className="hidden sm:inline">{labels[s]}</span>
                       </button>
                     ))}
                   </div>
