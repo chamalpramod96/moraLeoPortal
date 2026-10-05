@@ -4,7 +4,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { MOCK_MEMBER_POINTS } from '../data/mockData';
-import { isAttended, isHybridEvent, getEventCategory } from '../data/pointsConfig';
+import { isAttended, isHybridEvent, getEventCategory, PROJECT_ROLES } from '../data/pointsConfig';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 
@@ -76,11 +76,38 @@ export function calcManualPoints(memberEmail, manualPoints) {
 }
 
 /**
- * Full breakdown for one member.
- * Returns { eventPoints, manualPoints, total }
+ * Project roles a member holds (matched by memberKey), newest first:
+ * [{ projectId, projectName, date, role, roleLabel, points }]
  */
-export function computeMemberPoints(memberEmail, attendance, events, manualPoints) {
-  const eventPts  = calcEventPoints(memberEmail, attendance, events);
-  const manualPts = calcManualPoints(memberEmail, manualPoints);
-  return { eventPoints: eventPts, manualPoints: manualPts, total: eventPts + manualPts };
+export function projectRolesFor(key, projects = []) {
+  if (!key) return [];
+  const out = [];
+  for (const p of projects) {
+    for (const r of PROJECT_ROLES) {
+      if (p.roles?.[r.id]?.key === key) {
+        out.push({
+          projectId: p.id, projectName: p.name, date: p.date,
+          role: r.id, roleLabel: r.label,
+          points: Number(p.rolePoints?.[r.id] ?? r.points),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Full breakdown for one member.
+ * Returns { eventPoints, projectPoints, manualPoints, total }.
+ * `key` (memberKey of the email) is needed for project points; without it
+ * they count as 0.
+ */
+export function computeMemberPoints(memberEmail, attendance, events, manualPoints, projects = [], key = null) {
+  const eventPts   = calcEventPoints(memberEmail, attendance, events);
+  const projectPts = projectRolesFor(key, projects).reduce((s, r) => s + r.points, 0);
+  const manualPts  = calcManualPoints(memberEmail, manualPoints);
+  return {
+    eventPoints: eventPts, projectPoints: projectPts, manualPoints: manualPts,
+    total: eventPts + projectPts + manualPts,
+  };
 }

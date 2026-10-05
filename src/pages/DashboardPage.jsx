@@ -6,7 +6,8 @@ import { getMemberManualPoints, computeMemberPoints } from '../services/pointsSe
 import { useProfilePhoto }              from '../hooks/useProfilePhoto';
 import Badge                             from '../components/Badge';
 import LoadingSpinner                    from '../components/LoadingSpinner';
-import { formatDateShort, calcAttendanceRate, rateColor, PHOTO_ACCEPT } from '../utils/helpers';
+import { formatDateShort, calcAttendanceRate, rateColor, memberKey, PHOTO_ACCEPT } from '../utils/helpers';
+import { getProjects }                   from '../services/projectService';
 import { isAttended }                    from '../data/pointsConfig';
 
 function StatCard({ value, label, color = 'text-portal-gold' }) {
@@ -24,6 +25,8 @@ function DashboardPage() {
   const [events,     setEvents]     = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [manualPts,  setManualPts]  = useState([]);
+  const [projects,   setProjects]   = useState([]);
+  const [myKey,      setMyKey]      = useState(null);
   const [loading,    setLoading]    = useState(true);
 
   // Keyed on email so a profile-photo change doesn't refetch everything
@@ -32,14 +35,18 @@ function DashboardPage() {
     if (!email) return;
     (async () => {
       try {
-        const [evList, attList, mp] = await Promise.all([
+        const [evList, attList, mp, projList, key] = await Promise.all([
           getEvents(),
           getMemberAttendance(email),
           getMemberManualPoints(email),
+          getProjects(),
+          memberKey(email),
         ]);
         setEvents(evList);
         setAttendance(attList);
         setManualPts(mp);
+        setProjects(projList);
+        setMyKey(key);
       } finally {
         setLoading(false);
       }
@@ -51,8 +58,8 @@ function DashboardPage() {
   const attendedCount  = attendance.filter(a => isAttended(a.status)).length;
   const attendanceRate = calcAttendanceRate(attendedCount, attendance.length);
 
-  // Total = event participation + manual points, same as Points Table/Leaderboard
-  const points = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts);
+  // Total = events + project roles (+ any manual points), same as Leaderboard
+  const points = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts, projects, myKey);
 
   // Last 5 events with member status
   const recentEvents = events.slice(0, 5).map(ev => ({
@@ -130,10 +137,9 @@ function DashboardPage() {
         <div className="flex items-center gap-4">
             <div>
               <p className="text-3xl font-bold text-portal-text">{points.total.toLocaleString()}</p>
-              <p className="text-xs text-portal-muted mt-0.5">
-                {points.eventPoints.toLocaleString()} participation
-                {' + '}{points.manualPoints.toLocaleString()} other points
-              </p>
+              <Link to="/profile" className="text-xs text-portal-muted hover:text-portal-gold mt-0.5 inline-block">
+                See how you earned them <i className="fa-solid fa-arrow-right ml-1" />
+              </Link>
             </div>
           </div>
         </div>

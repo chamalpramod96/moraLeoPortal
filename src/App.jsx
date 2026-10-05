@@ -15,6 +15,7 @@ import AttendancePage     from './pages/admin/AttendancePage';
 import PointsTablePage   from './pages/PointsTablePage';
 import LeaderboardPage   from './pages/LeaderboardPage';
 import OrientationPage   from './pages/OrientationPage';
+import ProjectsPage      from './pages/ProjectsPage';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="profile"   element={<ProfilePage />} />
               <Route path="events"    element={<EventsPage />} />
+              <Route path="projects"  element={<ProjectsPage />} />
               <Route path="points"    element={<PointsTablePage />} />
               <Route path="orientation" element={<OrientationPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />

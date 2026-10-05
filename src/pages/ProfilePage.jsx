@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth }             from '../context/AuthContext';
 import { getEvents, getMemberAttendance } from '../services/eventService';
-import { getMemberManualPoints, computeMemberPoints } from '../services/pointsService';
+import { getMemberManualPoints, computeMemberPoints, projectRolesFor, eventPointsFor } from '../services/pointsService';
+import { getProjects } from '../services/projectService';
 import { sendSetPasswordEmail } from '../services/memberService';
 import { useProfilePhoto }       from '../hooks/useProfilePhoto';
 import { useToast }            from '../context/ToastContext';
 import Badge                   from '../components/Badge';
 import LoadingSpinner          from '../components/LoadingSpinner';
 import { getManualCategory, isAttended } from '../data/pointsConfig';
-import { formatDate, formatDateShort, calcAttendanceRate, rateColor, PHOTO_ACCEPT } from '../utils/helpers';
+import { formatDate, formatDateShort, calcAttendanceRate, rateColor, memberKey, PHOTO_ACCEPT } from '../utils/helpers';
 
 function ProfilePage() {
   const { memberData }       = useAuth();
@@ -17,6 +18,8 @@ function ProfilePage() {
   const [events,      setEvents]      = useState([]);
   const [attendance,  setAttendance]  = useState([]);
   const [manualPts,   setManualPts]   = useState([]);
+  const [projects,    setProjects]    = useState([]);
+  const [myKey,       setMyKey]       = useState(null);
   const [loading,     setLoading]     = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [pwSending,   setPwSending]   = useState(false);
@@ -28,14 +31,18 @@ function ProfilePage() {
     (async () => {
       setLoading(true);
       try {
-        const [evList, attList, mp] = await Promise.all([
+        const [evList, attList, mp, projList, key] = await Promise.all([
           getEvents(),
           getMemberAttendance(email),
           getMemberManualPoints(email),
+          getProjects(),
+          memberKey(email),
         ]);
         setEvents(evList);
         setAttendance(attList);
         setManualPts(mp);
+        setProjects(projList);
+        setMyKey(key);
       } finally {
         setLoading(false);
       }
@@ -76,8 +83,9 @@ function ProfilePage() {
   const attended  = attendance.filter(a => isAttended(a.status)).length;
   const rate      = calcAttendanceRate(attended, attendance.length);
 
-  // Total = event participation + manual points, same as Points Table/Leaderboard
-  const points = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts);
+  // Total = events + project roles (+ any manual points), same as Leaderboard
+  const points  = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts, projects, myKey);
+  const myRoles = projectRolesFor(myKey, projects);
 
   // Join attendance with events
   const attWithEvent = attendance.map(rec => ({
@@ -211,23 +219,67 @@ function ProfilePage() {
         <div className="px-5 py-4 border-b border-subtle">
           <h2 className="font-semibold text-portal-text flex items-center gap-2">
             <i className="fa-solid fa-trophy text-portal-gold" />
-            Mora Connect Points
+            Mora Connect Points — how you earned them
           </h2>
         </div>
 
         <div className="px-5 py-4 space-y-4">
           <div>
             <p className="text-3xl font-bold text-portal-text">{points.total.toLocaleString()}</p>
-            <p className="text-xs text-portal-muted mt-0.5">
-              {points.eventPoints.toLocaleString()} participation
-              {' + '}{points.manualPoints.toLocaleString()} other points
+            <div className="flex flex-wrap gap-2 mt-2 text-xs">
+              <span className="px-2.5 py-1 rounded-full bg-white/[0.04] border border-subtle text-portal-muted">
+                <i className="fa-solid fa-calendar-check text-portal-gold mr-1" />
+                Events <strong className="text-portal-text">{points.eventPoints.toLocaleString()}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-white/[0.04] border border-subtle text-portal-muted">
+                <i className="fa-solid fa-diagram-project text-portal-gold mr-1" />
+                Projects <strong className="text-portal-text">{points.projectPoints.toLocaleString()}</strong>
+              </span>
+              {points.manualPoints > 0 && (
+                <span className="px-2.5 py-1 rounded-full bg-white/[0.04] border border-subtle text-portal-muted">
+                  <i className="fa-solid fa-award text-portal-gold mr-1" />
+                  Awards <strong className="text-portal-text">{points.manualPoints.toLocaleString()}</strong>
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-portal-muted mt-2">
+              Event points are listed per event in your Attendance History below.
             </p>
           </div>
 
-          {/* Manual points breakdown */}
+          {/* Project roles */}
+          <div>
+            <p className="text-xs text-portal-muted uppercase tracking-widest mb-2">Project Roles</p>
+            {myRoles.length === 0 ? (
+              <p className="text-sm text-portal-muted italic">No project roles yet.</p>
+            ) : (
+              <div className="rounded-lg overflow-hidden border border-subtle">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-white/[0.04] border-b border-subtle">
+                      <th className="px-4 py-2.5 text-left text-portal-muted text-xs uppercase tracking-wide">Project</th>
+                      <th className="px-4 py-2.5 text-left text-portal-muted text-xs uppercase tracking-wide">Role</th>
+                      <th className="px-4 py-2.5 text-right text-portal-muted text-xs uppercase tracking-wide">Points</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-subtle">
+                    {myRoles.map(r => (
+                      <tr key={`${r.projectId}-${r.role}`} className="hover:bg-white/[0.02]">
+                        <td className="px-4 py-2.5 text-portal-text">{r.projectName}</td>
+                        <td className="px-4 py-2.5 text-portal-muted">{r.roleLabel}</td>
+                        <td className="px-4 py-2.5 text-right text-portal-gold font-bold">+{r.points}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Awards / manual points (only shown if any were given) */}
           {manualPts.length > 0 && (
             <div>
-              <p className="text-xs text-portal-muted uppercase tracking-widest mb-2">Manual / Other Points History</p>
+              <p className="text-xs text-portal-muted uppercase tracking-widest mb-2">Awards</p>
               <div className="rounded-lg overflow-hidden border border-subtle">
                 <table className="w-full text-sm">
                   <thead>
@@ -270,8 +322,9 @@ function ProfilePage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-subtle">
-                  {['Event', 'Date', 'Category', 'Status'].map(h => (
-                    <th key={h} className="text-left px-5 py-3 text-portal-muted text-xs uppercase tracking-wide font-medium">
+                  {['Event', 'Date', 'Category', 'Status', 'Points'].map(h => (
+                    <th key={h} className={`px-5 py-3 text-portal-muted text-xs uppercase tracking-wide font-medium
+                                            ${h === 'Points' ? 'text-right' : 'text-left'}`}>
                       {h}
                     </th>
                   ))}
@@ -295,6 +348,14 @@ function ProfilePage() {
                     </td>
                     <td className="px-5 py-3">
                       <Badge status={rec.status} />
+                    </td>
+                    <td className="px-5 py-3 text-right font-bold whitespace-nowrap">
+                      {(() => {
+                        const pts = eventPointsFor(rec.status, rec.event);
+                        return pts > 0
+                          ? <span className="text-portal-gold">+{pts}</span>
+                          : <span className="text-portal-muted font-normal">—</span>;
+                      })()}
                     </td>
                   </tr>
                 ))}

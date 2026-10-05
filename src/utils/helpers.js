@@ -54,6 +54,17 @@ export function safeHttpsUrl(url) {
 }
 
 /**
+ * Opaque per-member key (SHA-256 of the lowercase email). Used where every
+ * member can read the data (leaderboard, projects) so a member can find
+ * their own entries without anyone's email being exposed.
+ */
+export async function memberKey(email) {
+  const data = new TextEncoder().encode((email ?? '').trim().toLowerCase());
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * Return first letter(s) for an avatar fallback.
  */
 export function initials(name) {

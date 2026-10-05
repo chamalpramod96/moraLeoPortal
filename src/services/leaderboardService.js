@@ -3,6 +3,8 @@ import { db } from './firebase';
 import { getMembers } from './memberService';
 import { getEvents, getAllAttendance } from './eventService';
 import { getAllManualPoints, computeMemberPoints } from './pointsService';
+import { getProjects } from './projectService';
+import { memberKey } from '../utils/helpers';
 
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 
@@ -11,18 +13,9 @@ const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
  * leaderboard/current: name, position and points only. Members can't read
  * other members' records or attendance (rules), so admins — who can —
  * compute it and publish it after any change that affects points.
+ * Rows are keyed by memberKey(email) so no email is exposed.
  */
 const leaderboardDoc = () => doc(db, 'leaderboard', 'current');
-
-/**
- * Opaque per-member key (SHA-256 of the lowercase email), so a member can
- * find their own row without the leaderboard exposing anyone's email.
- */
-export async function memberKey(email) {
-  const data = new TextEncoder().encode((email ?? '').trim().toLowerCase());
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
 
 /** Sort by total; equal totals share a place (1, 2, 2, 4). */
 function rankRows(rows) {
@@ -35,18 +28,19 @@ function rankRows(rows) {
 
 /** Admin only: build the ranking from full data (active members). */
 export async function computeLeaderboard() {
-  const [members, events, manualPts, attendance] = await Promise.all([
-    getMembers(), getEvents(), getAllManualPoints(), getAllAttendance(),
+  const [members, events, manualPts, attendance, projects] = await Promise.all([
+    getMembers(), getEvents(), getAllManualPoints(), getAllAttendance(), getProjects(),
   ]);
   const rows = await Promise.all(
     members.filter(m => m.isActive).map(async m => {
-      const { eventPoints, manualPoints, total } =
-        computeMemberPoints(m.email, attendance, events, manualPts);
+      const key = await memberKey(m.email);
+      const { eventPoints, projectPoints, manualPoints, total } =
+        computeMemberPoints(m.email, attendance, events, manualPts, projects, key);
       return {
-        key:      await memberKey(m.email),
+        key,
         name:     m.fullName ?? '',
         position: m.position ?? '',
-        eventPoints, manualPoints, total,
+        eventPoints, projectPoints, manualPoints, total,
       };
     }),
   );

@@ -4,6 +4,8 @@ import LoadingSpinner             from '../components/LoadingSpinner';
 import { ACTIVE_EVENT_POINT_CATEGORIES, MANUAL_POINT_CATEGORIES, LEVELS, getLevelInfo } from '../data/pointsConfig';
 import { computeMemberPoints, getMemberManualPoints } from '../services/pointsService';
 import { getMemberAttendance, getEvents }              from '../services/eventService';
+import { getProjects }                               from '../services/projectService';
+import { memberKey }                                 from '../utils/helpers';
 
 // ─── Section accordion ────────────────────────────────────────────────────────
 function Section({ title, icon, children, defaultOpen = false }) {
@@ -93,27 +95,30 @@ export default function PointsTablePage() {
   const { memberData } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [totals,  setTotals]  = useState({ eventPoints: 0, manualPoints: 0, total: 0 });
+  const [totals,  setTotals]  = useState({ eventPoints: 0, projectPoints: 0, manualPoints: 0, total: 0 });
 
+  const email = memberData?.email;
   useEffect(() => {
-    if (!memberData?.email) { setLoading(false); return; }
+    if (!email) { setLoading(false); return; }
     (async () => {
       try {
-        const [att, events, manualPts] = await Promise.all([
-          getMemberAttendance(memberData.email),
+        const [att, events, manualPts, projects, key] = await Promise.all([
+          getMemberAttendance(email),
           getEvents(),
-          getMemberManualPoints(memberData.email),
+          getMemberManualPoints(email),
+          getProjects(),
+          memberKey(email),
         ]);
-        setTotals(computeMemberPoints(memberData.email, att, events, manualPts));
+        setTotals(computeMemberPoints(email, att, events, manualPts, projects, key));
       } finally {
         setLoading(false);
       }
     })();
-  }, [memberData?.email]);
+  }, [email]);
 
   if (loading) return <LoadingSpinner />;
 
-  const { eventPoints, manualPoints, total } = totals;
+  const { eventPoints, projectPoints, manualPoints, total } = totals;
   const { current, next, progressPct } = getLevelInfo(total);
 
   return (
@@ -140,8 +145,11 @@ export default function PointsTablePage() {
               <span className="text-portal-muted text-base font-normal ml-2">pts</span>
             </p>
             <div className="flex gap-4 mt-2 text-xs text-portal-muted">
-              <span>Participation: <strong className="text-portal-text">{eventPoints.toLocaleString()}</strong></span>
-              <span>Manual / Achievements: <strong className="text-portal-text">{manualPoints.toLocaleString()}</strong></span>
+              <span>Events: <strong className="text-portal-text">{eventPoints.toLocaleString()}</strong></span>
+              <span>Projects: <strong className="text-portal-text">{projectPoints.toLocaleString()}</strong></span>
+              {manualPoints > 0 && (
+                <span>Awards: <strong className="text-portal-text">{manualPoints.toLocaleString()}</strong></span>
+              )}
             </div>
           </div>
 

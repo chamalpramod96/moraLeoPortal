@@ -3,9 +3,9 @@ import { useAuth }                     from '../context/AuthContext';
 import { useToast }                    from '../context/ToastContext';
 import LoadingSpinner                  from '../components/LoadingSpinner';
 import {
-  computeLeaderboard, saveLeaderboard, getPublishedLeaderboard, memberKey,
+  computeLeaderboard, saveLeaderboard, getPublishedLeaderboard,
 } from '../services/leaderboardService';
-import { initials }                    from '../utils/helpers';
+import { initials, memberKey }         from '../utils/helpers';
 
 const medalIcon = (rank) => {
   if (rank === 1) return <i className="fa-solid fa-trophy text-yellow-400" title="1st Place" />;
@@ -111,8 +111,7 @@ export default function LeaderboardPage() {
                     #{me.rank} <span className="text-sm font-normal text-portal-muted">of {rows.length}</span>
                   </p>
                   <p className="text-xs text-portal-muted mt-1">
-                    {me.total.toLocaleString()} pts · {me.eventPoints.toLocaleString()} participation
-                    {' + '}{me.manualPoints.toLocaleString()} other
+                    {me.total.toLocaleString()} pts · see how you earned them on your Profile
                   </p>
                 </>
               ) : (
@@ -142,9 +141,7 @@ export default function LeaderboardPage() {
                     <tr className="border-b border-subtle bg-white/[0.03]">
                       <th className="px-4 py-3 text-center text-xs uppercase tracking-wider text-portal-muted w-14">Rank</th>
                       <th className="px-4 py-3 text-left text-xs uppercase tracking-wider text-portal-muted">Member</th>
-                      <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted hidden sm:table-cell">Participation</th>
-                      <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted hidden sm:table-cell">Other</th>
-                      <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted">Total</th>
+                      <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted">Points</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-subtle">
@@ -174,12 +171,6 @@ export default function LeaderboardPage() {
                                 <p className="text-portal-muted text-xs truncate">{row.position || 'Member'}</p>
                               </div>
                             </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-right text-portal-muted font-mono hidden sm:table-cell">
-                            {row.eventPoints.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3.5 text-right text-portal-muted font-mono hidden sm:table-cell">
-                            {row.manualPoints.toLocaleString()}
                           </td>
                           <td className="px-4 py-3.5 text-right">
                             <span className="text-portal-gold font-bold font-mono text-base">

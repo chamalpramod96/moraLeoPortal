@@ -87,6 +87,16 @@ export const isAttended = (status) => status === 'attended' || status === 'atten
 /** True if the event's points category is a hybrid meeting. */
 export const isHybridEvent = (event) => !!getEventCategory(event?.pointsCategory)?.hybrid;
 
+// ─── Project roles (Projects page) ────────────────────────────────────────────
+// Assigning a member to a role on a club project adds these points to their
+// total automatically. Values match Club – Project Chairman / Secretary /
+// Treasurer below; each project stores the values it was created with.
+export const PROJECT_ROLES = [
+  { id: 'chairperson', label: 'Chairperson', points: 250 },
+  { id: 'secretary',   label: 'Secretary',   points: 150 },
+  { id: 'treasurer',   label: 'Treasurer',   points: 150 },
+];
+
 // ─── Manual Point Categories (Involvements, Achievements, Growth) ─────────────
 export const MANUAL_POINT_CATEGORIES = [
   // Club Involvements

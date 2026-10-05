@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { to: '/dashboard',           label: 'Dashboard',     icon: 'fa-gauge-high'    },
   { to: '/profile',             label: 'My Profile',    icon: 'fa-user'          },
   { to: '/events',              label: 'Events',        icon: 'fa-calendar-days' },
+  { to: '/projects',            label: 'Projects',      icon: 'fa-diagram-project' },
   { to: '/points',              label: 'Points Table',  icon: 'fa-trophy'        },
   { to: '/leaderboard',         label: 'Leaderboard',   icon: 'fa-ranking-star'  },
   { to: '/orientation',         label: 'Orientation Program', icon: 'fa-book-open' },

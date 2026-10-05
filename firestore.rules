@@ -95,6 +95,21 @@ service cloud.firestore {
         request.resource.data.rows.size() <= 1000;
     }
 
+    // ── Projects ─────────────────────────────────────────────────────────────
+    // Every active member can view; admins add, edit and remove. Role holders
+    // are stored as { key, name } (no emails). The image must be in Storage.
+    match /projects/{projectId} {
+      allow read: if isActiveMember();
+      allow create, update: if isAdmin() &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 150 &&
+        request.resource.data.imageUrl is string &&
+        (request.resource.data.imageUrl == '' ||
+         request.resource.data.imageUrl.matches('https://firebasestorage[.]googleapis[.]com/.*'));
+      allow delete: if isAdmin();
+    }
+
     // ── Orientation Program files ───────────────────────────────────────────
     // Every active member can view; admins add and remove. The url must point
     // at Firebase Storage (rendered as a link for all members).
