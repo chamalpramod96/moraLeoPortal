@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getEventCategory, groupedEventCategories } from '../../data/pointsConfig';
 import { PHOTO_ACCEPT, isAllowedPhoto } from '../../utils/helpers';
+import { EVENT_TYPES } from '../../data/eventTypes';
 
 const EMPTY_FORM = {
   title: '', description: '', date: '', location: '', category: 'Service',
@@ -9,7 +10,6 @@ const EMPTY_FORM = {
   newPhotoFiles: [],
 };
 
-const CATEGORIES = ['Service', 'Fellowship', 'Official', 'Other'];
 
 /**
  * EventFormIsolated — ISOLATED FORM COMPONENT
@@ -149,9 +149,13 @@ function EventFormIsolated({
             className="w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
                        text-portal-text text-sm focus:outline-none focus:border-portal-gold/50"
           >
-            {CATEGORIES.map(c => (
+            {EVENT_TYPES.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
+            {/* An older event keeps its previous type until changed */}
+            {formState.category && !EVENT_TYPES.includes(formState.category) && (
+              <option value={formState.category}>{formState.category} — no longer used</option>
+            )}
           </select>
         </div>
       </div>

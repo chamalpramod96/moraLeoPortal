@@ -4,8 +4,9 @@ import { getEvents, getMemberAttendance } from '../services/eventService';
 import Badge                              from '../components/Badge';
 import LoadingSpinner                     from '../components/LoadingSpinner';
 import { formatDateShort, safeHttpsUrl }  from '../utils/helpers';
+import { EVENT_TYPES, eventTypeStyle }  from '../data/eventTypes';
 
-const CATEGORIES = ['All', 'Service', 'Fellowship', 'Official', 'Other'];
+const CATEGORIES = ['All', ...EVENT_TYPES];
 
 function EventsPage() {
   const { memberData }       = useAuth();
@@ -55,12 +56,6 @@ function EventsPage() {
   const getStatus = (eventId) =>
     attendance.find(a => a.eventId === eventId)?.status ?? 'not marked';
 
-  const catColors = {
-    Service:    'bg-blue-900/40 text-blue-400 border border-blue-600/30',
-    Fellowship: 'bg-purple-900/40 text-purple-400 border border-purple-600/30',
-    Official:   'bg-portal-gold/20 text-portal-gold border border-portal-gold/30',
-    Other:      'bg-gray-800 text-gray-400 border border-gray-600/30',
-  };
 
   return (
     <div className="space-y-5">
@@ -133,8 +128,8 @@ function EventsPage() {
                 <h3 className="text-portal-text font-semibold text-sm leading-tight flex-1">
                   {ev.title}
                 </h3>
-                <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0
-                                  ${catColors[ev.category] ?? catColors.Other}`}>
+                <span className={`text-xs px-2 py-0.5 rounded border flex-shrink-0
+                                  ${eventTypeStyle(ev.category)}`}>
                   {ev.category}
                 </span>
               </div>

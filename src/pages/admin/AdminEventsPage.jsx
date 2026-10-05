@@ -13,6 +13,7 @@ import { auth }                 from '../../services/firebase';
 import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import LoadingSpinner           from '../../components/LoadingSpinner';
 import { formatDateShort }      from '../../utils/helpers';
+import { eventTypeStyle }       from '../../data/eventTypes';
 import EventFormIsolated        from './EventFormIsolated';
 
 const EMPTY_FORM = {
@@ -22,12 +23,6 @@ const EMPTY_FORM = {
   newPhotoFiles:  [],   // [{ file, preview, type, caption }] — newly selected
 };
 
-const CAT_COLORS = {
-  Service: 'border-blue-600/50 text-blue-300 bg-blue-950/20',
-  Fellowship: 'border-green-600/50 text-green-300 bg-green-950/20',
-  Official: 'border-portal-gold/50 text-portal-gold bg-portal-gold/10',
-  Other: 'border-portal-muted/50 text-portal-muted',
-};
 
 function AdminEventsPage() {
   const { memberData }           = useAuth();
@@ -228,7 +223,7 @@ function AdminEventsPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-portal-text font-semibold text-sm">{ev.title}</h3>
                   <span className={`text-xs px-2 py-0.5 rounded border
-                                    ${CAT_COLORS[ev.category] ?? CAT_COLORS.Other}`}>
+                                    ${eventTypeStyle(ev.category)}`}>
                     {ev.category}
                   </span>
                 </div>
