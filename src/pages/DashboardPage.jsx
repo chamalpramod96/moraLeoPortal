@@ -6,7 +6,7 @@ import { getMemberManualPoints, computeMemberPoints } from '../services/pointsSe
 import { useProfilePhoto }              from '../hooks/useProfilePhoto';
 import Badge                             from '../components/Badge';
 import LoadingSpinner                    from '../components/LoadingSpinner';
-import { formatDateShort, calcAttendanceRate, PHOTO_ACCEPT } from '../utils/helpers';
+import { formatDateShort, calcAttendanceRate, rateColor, PHOTO_ACCEPT } from '../utils/helpers';
 import { isAttended }                    from '../data/pointsConfig';
 
 function StatCard({ value, label, color = 'text-portal-gold' }) {
@@ -111,7 +111,7 @@ function DashboardPage() {
       <div className="grid grid-cols-3 gap-3">
         <StatCard value={attendance.length} label="My Events"   color="text-portal-gold" />
         <StatCard value={attendedCount}  label="Attended"       color="text-green-400"   />
-        <StatCard value={`${attendanceRate}%`} label="Rate"    color="text-portal-red"  />
+        <StatCard value={`${attendanceRate}%`} label="Rate"    color={rateColor(attendanceRate, attendance.length > 0)} />
       </div>
 
       {/* ── Level & Points card ───────────────────────────────────── */}

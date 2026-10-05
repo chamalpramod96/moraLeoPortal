@@ -26,6 +26,17 @@ export function calcAttendanceRate(attended, total) {
 }
 
 /**
+ * Text colour for an attendance rate: green 75%+, gold 50–74%, red below 50%.
+ * Grey when the member has no marked events yet (0% would look like a failure).
+ */
+export function rateColor(rate, hasEvents = true) {
+  if (!hasEvents) return 'text-portal-muted';
+  if (rate >= 75) return 'text-green-400';
+  if (rate >= 50) return 'text-portal-gold';
+  return 'text-portal-red';
+}
+
+/**
  * Photo formats accepted for uploads. Keep in sync with isPhoto() in
  * storage.rules (SVG and other image/* types are rejected there).
  */

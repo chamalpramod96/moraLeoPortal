@@ -8,7 +8,7 @@ import { useToast }            from '../context/ToastContext';
 import Badge                   from '../components/Badge';
 import LoadingSpinner          from '../components/LoadingSpinner';
 import { getManualCategory, isAttended } from '../data/pointsConfig';
-import { formatDate, formatDateShort, calcAttendanceRate, PHOTO_ACCEPT } from '../utils/helpers';
+import { formatDate, formatDateShort, calcAttendanceRate, rateColor, PHOTO_ACCEPT } from '../utils/helpers';
 
 function ProfilePage() {
   const { memberData }       = useAuth();
@@ -202,7 +202,7 @@ function ProfilePage() {
           <div className="text-portal-muted text-xs mt-1">Attended</div>
         </div>
         <div className="card rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-portal-red">{rate}%</div>
+          <div className={`text-2xl font-bold ${rateColor(rate, attendance.length > 0)}`}>{rate}%</div>
           <div className="text-portal-muted text-xs mt-1">Rate</div>
         </div>
       </div>
