@@ -3,11 +3,12 @@ import { useToast }       from '../../context/ToastContext';
 import Modal              from '../../components/Modal';
 import FormError          from '../../components/FormError';
 import { InlineSpinner }  from '../../components/LoadingSpinner';
+import MemberPicker       from '../../components/MemberPicker';
 import { saveProject }    from '../../services/projectService';
 import { refreshLeaderboardSoon } from '../../services/leaderboardService';
 import { PROJECT_ROLES }  from '../../data/pointsConfig';
 import {
-  safeHttpsUrl, memberKey, isAllowedPhoto, toDateInputValue, PHOTO_ACCEPT,
+  safeHttpsUrl, memberKey, isAllowedPhoto, PHOTO_ACCEPT,
 } from '../../utils/helpers';
 
 const MAX_IMAGE_MB = 5;
@@ -15,11 +16,11 @@ const MAX_IMAGE_MB = 5;
 // in the members list), so editing other fields doesn't drop them.
 const KEEP = '__keep__';
 
-const selectClass = `w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
-                     text-portal-text text-sm focus:outline-none focus:border-portal-gold/50`;
+const inputClass = `w-full bg-portal-bg border border-white/5 rounded-lg px-3 py-2
+                    text-portal-text text-sm focus:outline-none focus:border-portal-gold/50`;
 
 const emptyForm = () => ({
-  name: '', date: '', imageFile: null, imagePreview: '', removeImage: false,
+  name: '', imageFile: null, imagePreview: '', removeImage: false,
   roles: Object.fromEntries(PROJECT_ROLES.map(r => [r.id, ''])),
 });
 
@@ -32,7 +33,7 @@ function formFor(project, keyToEmail) {
     roles[r.id] = !holder ? '' : (keyToEmail[holder.key] ?? KEEP);
   }
   return {
-    ...emptyForm(), name: project.name ?? '', date: toDateInputValue(project.date),
+    ...emptyForm(), name: project.name ?? '',
     imagePreview: safeHttpsUrl(project.imageUrl) ?? '', roles,
   };
 }
@@ -87,7 +88,7 @@ function ProjectFormModal({ project, members, keyToEmail, onClose, onSaved }) {
     setFormErr('');
     try {
       await saveProject({
-        id: project?.id, name: form.name, date: form.date, roles: await resolveRoles(),
+        id: project?.id, name: form.name, roles: await resolveRoles(),
         imageFile: form.imageFile, removeImage: form.removeImage, existing: project,
       });
       showToast(project ? 'Project updated.' : `Project "${form.name.trim()}" added.`, 'success');
@@ -106,18 +107,11 @@ function ProjectFormModal({ project, members, keyToEmail, onClose, onSaved }) {
       <form onSubmit={handleSave} className="space-y-4">
         <FormError message={formErr} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="sm:col-span-2">
-            <label className="block text-xs text-portal-muted mb-1">Project Name *</label>
-            <input value={form.name} maxLength={150}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. Blood Donation Campaign 2026" className={selectClass} />
-          </div>
-          <div>
-            <label className="block text-xs text-portal-muted mb-1">Date</label>
-            <input type="date" value={form.date}
-              onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={selectClass} />
-          </div>
+        <div>
+          <label className="block text-xs text-portal-muted mb-1">Project Name *</label>
+          <input value={form.name} maxLength={150}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            placeholder="e.g. Blood Donation Campaign 2026" className={inputClass} />
         </div>
 
         {/* Image */}
@@ -148,24 +142,27 @@ function ProjectFormModal({ project, members, keyToEmail, onClose, onSaved }) {
           <p className="text-portal-muted/70 text-xs mt-1">Best as a 4:5 poster (e.g. 4×5 inch). JPG, PNG, WebP, GIF or HEIC — up to {MAX_IMAGE_MB} MB</p>
         </div>
 
-        {/* Roles */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1 border-t border-subtle">
+        {/* Roles — type a name and pick from the suggestions */}
+        <div className="space-y-3 pt-3 border-t border-subtle">
           {PROJECT_ROLES.map(r => {
             const holder = project?.roles?.[r.id];
+            // Someone already holding another role on this project isn't suggested
+            const takenElsewhere = new Set(
+              PROJECT_ROLES.filter(o => o.id !== r.id).map(o => form.roles[o.id]).filter(Boolean),
+            );
             return (
               <div key={r.id}>
                 <label className="block text-xs text-portal-muted mb-1">
                   {r.label} <span className="text-portal-gold">(+{r.points} pts)</span>
                 </label>
-                <select value={form.roles[r.id]}
-                  onChange={e => setForm(f => ({ ...f, roles: { ...f.roles, [r.id]: e.target.value } }))}
-                  className={selectClass}>
-                  <option value="">— None —</option>
-                  {members.map(m => <option key={m.email} value={m.email}>{m.fullName}</option>)}
-                  {form.roles[r.id] === KEEP && holder && (
-                    <option value={KEEP}>{holder.name} (no longer a member)</option>
-                  )}
-                </select>
+                <MemberPicker
+                  members={members}
+                  value={form.roles[r.id]}
+                  excluded={takenElsewhere}
+                  otherLabel={holder ? `${holder.name} (no longer a member)` : ''}
+                  placeholder="Type a name… (leave empty for none)"
+                  onChange={v => setForm(f => ({ ...f, roles: { ...f.roles, [r.id]: v } }))}
+                />
               </div>
             );
           })}

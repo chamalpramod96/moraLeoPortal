@@ -112,11 +112,10 @@ function DashboardPage() {
       </div>
 
       {/* ── Quick links ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {[
-          { to: '/profile', icon: 'fa-user',      label: 'My Profile'       },
-          { to: '/events',  icon: 'fa-calendar',  label: 'All Events'       },
-          { to: '/profile', icon: 'fa-file-word', label: 'Download Profile' },
+          { to: '/profile', icon: 'fa-user',     label: 'My Profile' },
+          { to: '/events',  icon: 'fa-calendar', label: 'All Events' },
         ].map(({ to, icon, label }) => (
           <Link
             key={label}

@@ -3,7 +3,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './firebase';
-import { docsWithIds, dateInputToTimestamp, logDemoWrite } from './firestoreUtils';
+import { docsWithIds, logDemoWrite } from './firestoreUtils';
 import { PROJECT_ROLES } from '../data/pointsConfig';
 import { MOCK_PROJECTS } from '../data/mockData';
 import { IS_DEMO } from '../config/env';
@@ -13,7 +13,7 @@ import { IS_DEMO } from '../config/env';
  * { key, name } — key is memberKey(email), so members can find their own roles
  * (and earn the points) without project records exposing anyone's email.
  *
- * projects/{id}: { name, date, imageUrl, imagePath,
+ * projects/{id}: { name, date (older projects only), imageUrl, imagePath,
  *                  roles: { chairperson, secretary, treasurer }  // { key, name } | null
  *                  rolePoints: { chairperson, secretary, treasurer },
  *                  createdAt, updatedAt }
@@ -31,7 +31,7 @@ const defaultRolePoints = () =>
  * Create (no `id`) or update a project. `imageFile` replaces the image when
  * given; `removeImage` clears it. Returns the project id.
  */
-export async function saveProject({ id, name, date, roles, imageFile, removeImage, existing }) {
+export async function saveProject({ id, name, roles, imageFile, removeImage, existing }) {
   if (IS_DEMO) { logDemoWrite('saveProject'); return id ?? 'demo'; }
   const docRef = id ? doc(db, 'projects', id) : doc(collection(db, 'projects'));
 
@@ -52,7 +52,8 @@ export async function saveProject({ id, name, date, roles, imageFile, removeImag
 
   await setDoc(docRef, {
     name:       name.trim(),
-    date:       date ? dateInputToTimestamp(date) : null,
+    // Projects no longer take a date; older ones keep theirs
+    date:       existing?.date ?? null,
     imageUrl,
     imagePath,
     roles,
