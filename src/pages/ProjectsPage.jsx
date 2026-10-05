@@ -189,17 +189,26 @@ function ProjectsPage() {
           {isAdmin && <p className="text-portal-muted/70 text-xs mt-1">Use “Add Project” to add the first one.</p>}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {projects.map(p => {
             const img = safeHttpsUrl(p.imageUrl);
             return (
-              <div key={p.id} className="card rounded-xl overflow-hidden flex flex-col">
-                <div className="aspect-video bg-white/[0.03] border-b border-subtle flex items-center justify-center">
-                  {img
-                    ? <img src={img} alt="" className="w-full h-full object-cover" />
-                    : <i className="fa-solid fa-image text-4xl text-portal-muted/30" />}
+              <div key={p.id} className="card rounded-xl p-4 flex gap-4">
+                {/* 4:5 poster thumbnail — click to view full size */}
+                <div className="relative w-28 sm:w-36 aspect-[4/5] flex-shrink-0 self-start rounded-lg overflow-hidden
+                                bg-white/[0.03] border border-subtle">
+                  {img ? (
+                    <a href={img} target="_blank" rel="noopener noreferrer" title="View full poster">
+                      <img src={img} alt={p.name}
+                        className="absolute inset-0 w-full h-full object-cover hover:opacity-90 transition-opacity" />
+                    </a>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <i className="fa-solid fa-image text-3xl text-portal-muted/30" />
+                    </div>
+                  )}
                 </div>
-                <div className="p-4 flex-1 flex flex-col">
+                <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-portal-text font-semibold leading-snug break-words">{p.name}</h3>
@@ -219,25 +228,29 @@ function ProjectsPage() {
                     )}
                   </div>
 
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 space-y-2">
                     {PROJECT_ROLES.map(r => {
                       const holder = p.roles?.[r.id];
                       const isMe   = holder?.key && holder.key === myKey;
                       return (
-                        <div key={r.id} className="flex items-center gap-2 text-sm">
-                          <span className="text-portal-muted w-24 flex-shrink-0">{r.label}</span>
-                          <span className={`truncate ${holder ? 'text-portal-text' : 'text-portal-muted/60 italic'}`}>
-                            {holder?.name || '—'}
-                          </span>
-                          {isMe && (
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-portal-bg
-                                             bg-portal-gold rounded px-1.5 py-0.5">You</span>
-                          )}
-                          {holder && (
-                            <span className="ml-auto text-xs text-portal-gold font-semibold flex-shrink-0">
-                              +{p.rolePoints?.[r.id] ?? r.points}
+                        <div key={r.id} className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-wide text-portal-muted">
+                            {r.label}
+                            {holder && (
+                              <span className="ml-1.5 text-portal-gold font-semibold normal-case tracking-normal">
+                                +{p.rolePoints?.[r.id] ?? r.points}
+                              </span>
+                            )}
+                          </p>
+                          <p className="flex items-start gap-1.5 text-sm min-w-0">
+                            <span className={`break-words ${holder ? 'text-portal-text' : 'text-portal-muted/60 italic'}`}>
+                              {holder?.name || '—'}
                             </span>
-                          )}
+                            {isMe && (
+                              <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wide
+                                               text-portal-bg bg-portal-gold rounded px-1.5 py-0.5">You</span>
+                            )}
+                          </p>
                         </div>
                       );
                     })}
@@ -277,10 +290,10 @@ function ProjectsPage() {
           <div>
             <label className="block text-xs text-portal-muted mb-1">Project Image</label>
             <div className="flex items-center gap-3">
-              <div className="w-28 aspect-video rounded-lg overflow-hidden bg-white/[0.03] border border-subtle
+              <div className="relative w-20 aspect-[4/5] rounded-lg overflow-hidden bg-white/[0.03] border border-subtle
                               flex items-center justify-center flex-shrink-0">
                 {form.imagePreview
-                  ? <img src={form.imagePreview} alt="" className="w-full h-full object-cover" />
+                  ? <img src={form.imagePreview} alt="" className="absolute inset-0 w-full h-full object-cover" />
                   : <i className="fa-solid fa-image text-xl text-portal-muted/30" />}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -298,7 +311,7 @@ function ProjectsPage() {
                 )}
               </div>
             </div>
-            <p className="text-portal-muted/70 text-xs mt-1">JPG, PNG, WebP, GIF or HEIC — up to {MAX_IMAGE_MB} MB</p>
+            <p className="text-portal-muted/70 text-xs mt-1">Best as a 4:5 poster (e.g. 4×5 inch). JPG, PNG, WebP, GIF or HEIC — up to {MAX_IMAGE_MB} MB</p>
           </div>
 
           {/* Roles */}
