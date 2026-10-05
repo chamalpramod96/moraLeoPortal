@@ -2,11 +2,11 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { getMembers } from './memberService';
 import { getEvents, getAllAttendance } from './eventService';
-import { getAllManualPoints, computeMemberPoints } from './pointsService';
+import { getAllManualPoints } from './pointsService';
 import { getProjects } from './projectService';
+import { computeMemberPoints, rankRows } from '../domain/points';
 import { memberKey } from '../utils/helpers';
-
-const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+import { IS_DEMO } from '../config/env';
 
 /**
  * The leaderboard every member can see is a published summary in
@@ -16,15 +16,6 @@ const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
  * Rows are keyed by memberKey(email) so no email is exposed.
  */
 const leaderboardDoc = () => doc(db, 'leaderboard', 'current');
-
-/** Sort by total; equal totals share a place (1, 2, 2, 4). */
-function rankRows(rows) {
-  rows.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
-  rows.forEach((r, i) => {
-    r.rank = i > 0 && r.total === rows[i - 1].total ? rows[i - 1].rank : i + 1;
-  });
-  return rows;
-}
 
 /** Admin only: build the ranking from full data (active members). */
 export async function computeLeaderboard() {
@@ -56,8 +47,8 @@ export async function saveLeaderboard(rows) {
 let refreshTimer;
 /**
  * Call after an admin change that can affect points or names (attendance,
- * manual points, events, members). Debounced so a burst of changes is
- * recomputed once; runs in the background and never throws.
+ * manual points, events, members, projects). Debounced so a burst of changes
+ * is recomputed once; runs in the background and never throws.
  */
 export function refreshLeaderboardSoon() {
   clearTimeout(refreshTimer);

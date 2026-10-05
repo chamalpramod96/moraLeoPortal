@@ -47,11 +47,11 @@ function App() {
               <Route path="orientation" element={<OrientationPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />
 
-              {/* Secretary-only */}
+              {/* Admins only (secretary, president, superAdmin) */}
               <Route
                 path="admin/members"
                 element={
-                  <ProtectedRoute requireSecretary>
+                  <ProtectedRoute requireAdmin>
                     <MembersPage />
                   </ProtectedRoute>
                 }
@@ -59,7 +59,7 @@ function App() {
               <Route
                 path="admin/events"
                 element={
-                  <ProtectedRoute requireSecretary>
+                  <ProtectedRoute requireAdmin>
                     <AdminEventsPage />
                   </ProtectedRoute>
                 }
@@ -69,7 +69,7 @@ function App() {
               <Route
                 path="admin/events/:eventId/attendance"
                 element={
-                  <ProtectedRoute requireSecretary>
+                  <ProtectedRoute requireAdmin>
                     <AttendancePage />
                   </ProtectedRoute>
                 }

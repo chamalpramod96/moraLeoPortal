@@ -1,11 +1,12 @@
 import {
-  collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, serverTimestamp, Timestamp,
+  collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, serverTimestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './firebase';
+import { docsWithIds, dateInputToTimestamp, logDemoWrite } from './firestoreUtils';
 import { PROJECT_ROLES } from '../data/pointsConfig';
-
-const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+import { MOCK_PROJECTS } from '../data/mockData';
+import { IS_DEMO } from '../config/env';
 
 /**
  * Club projects, readable by every active member. Each role is stored as
@@ -19,9 +20,8 @@ const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
  */
 
 export async function getProjects() {
-  if (IS_DEMO) return [];
-  const snap = await getDocs(query(collection(db, 'projects'), orderBy('createdAt', 'desc')));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (IS_DEMO) return MOCK_PROJECTS;
+  return docsWithIds(await getDocs(query(collection(db, 'projects'), orderBy('createdAt', 'desc'))));
 }
 
 const defaultRolePoints = () =>
@@ -32,7 +32,7 @@ const defaultRolePoints = () =>
  * given; `removeImage` clears it. Returns the project id.
  */
 export async function saveProject({ id, name, date, roles, imageFile, removeImage, existing }) {
-  if (IS_DEMO) { console.info('[DEMO] saveProject — not persisted.'); return id ?? 'demo'; }
+  if (IS_DEMO) { logDemoWrite('saveProject'); return id ?? 'demo'; }
   const docRef = id ? doc(db, 'projects', id) : doc(collection(db, 'projects'));
 
   let imageUrl  = existing?.imageUrl  ?? '';
@@ -52,7 +52,7 @@ export async function saveProject({ id, name, date, roles, imageFile, removeImag
 
   await setDoc(docRef, {
     name:       name.trim(),
-    date:       date ? Timestamp.fromDate(new Date(date + 'T00:00:00')) : null,
+    date:       date ? dateInputToTimestamp(date) : null,
     imageUrl,
     imagePath,
     roles,
@@ -72,7 +72,7 @@ export async function saveProject({ id, name, date, roles, imageFile, removeImag
 
 /** Remove the record first (members stop seeing it), then its image. */
 export async function deleteProject(project) {
-  if (IS_DEMO) { console.info('[DEMO] deleteProject — not persisted.'); return; }
+  if (IS_DEMO) { logDemoWrite('deleteProject'); return; }
   await deleteDoc(doc(db, 'projects', project.id));
   if (project.imagePath) {
     await deleteObject(ref(storage, project.imagePath)).catch(() => {});

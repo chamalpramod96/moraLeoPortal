@@ -1,65 +1,22 @@
-import { useState, useEffect }         from 'react';
 import { Link }                         from 'react-router-dom';
 import { useAuth }                      from '../context/AuthContext';
-import { getEvents, getMemberAttendance } from '../services/eventService';
-import { getMemberManualPoints, computeMemberPoints } from '../services/pointsService';
-import { useProfilePhoto }              from '../hooks/useProfilePhoto';
+import { useMemberActivity }            from '../hooks/useMemberActivity';
 import Badge                             from '../components/Badge';
 import LoadingSpinner                    from '../components/LoadingSpinner';
-import { formatDateShort, calcAttendanceRate, rateColor, memberKey, PHOTO_ACCEPT } from '../utils/helpers';
-import { getProjects }                   from '../services/projectService';
+import StatCard                          from '../components/StatCard';
+import ProfilePhotoPicker                from '../components/ProfilePhotoPicker';
+import { formatDateShort, calcAttendanceRate, rateColor } from '../utils/helpers';
 import { isAttended }                    from '../data/pointsConfig';
-
-function StatCard({ value, label, color = 'text-portal-gold' }) {
-  return (
-    <div className="card rounded-xl p-4 text-center">
-      <div className={`text-3xl font-bold ${color}`}>{value}</div>
-      <div className="text-portal-muted text-xs mt-1">{label}</div>
-    </div>
-  );
-}
 
 function DashboardPage() {
   const { memberData } = useAuth();
-  const { uploading, inputRef: photoInputRef, handleChange: handlePhotoChange } = useProfilePhoto();
-  const [events,     setEvents]     = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [manualPts,  setManualPts]  = useState([]);
-  const [projects,   setProjects]   = useState([]);
-  const [myKey,      setMyKey]      = useState(null);
-  const [loading,    setLoading]    = useState(true);
-
-  // Keyed on email so a profile-photo change doesn't refetch everything
-  const email = memberData?.email;
-  useEffect(() => {
-    if (!email) return;
-    (async () => {
-      try {
-        const [evList, attList, mp, projList, key] = await Promise.all([
-          getEvents(),
-          getMemberAttendance(email),
-          getMemberManualPoints(email),
-          getProjects(),
-          memberKey(email),
-        ]);
-        setEvents(evList);
-        setAttendance(attList);
-        setManualPts(mp);
-        setProjects(projList);
-        setMyKey(key);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [email]);
+  // Total = events + project roles (+ any manual points), same as Leaderboard
+  const { events, attendance, points, loading } = useMemberActivity(memberData?.email);
 
   // Rate over the events this member was marked for (same as Profile and the
   // Word export) — not all events, which would count future/unmarked ones.
   const attendedCount  = attendance.filter(a => isAttended(a.status)).length;
   const attendanceRate = calcAttendanceRate(attendedCount, attendance.length);
-
-  // Total = events + project roles (+ any manual points), same as Leaderboard
-  const points = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts, projects, myKey);
 
   // Last 5 events with member status
   const recentEvents = events.slice(0, 5).map(ev => ({
@@ -74,31 +31,7 @@ function DashboardPage() {
       {/* ── Welcome card ──────────────────────────────────────────── */}
       <div className="card-gold rounded-xl p-6">
         <div className="flex items-start gap-4">
-          {/* Avatar — click to change photo */}
-          <div
-            className="relative w-16 h-16 rounded-full bg-portal-red/20 border-2 border-portal-gold/40
-                        flex items-center justify-center flex-shrink-0 overflow-hidden
-                        cursor-pointer group"
-            onClick={() => !uploading && photoInputRef.current?.click()}
-            title="Change profile photo"
-          >
-            {memberData?.profilePhoto
-              ? <img src={memberData.profilePhoto} alt="" className="w-full h-full object-cover" />
-              : <span className="text-2xl font-bold text-portal-gold">
-                  {memberData?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
-                </span>
-            }
-            <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center
-                            opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              {uploading
-                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <><i className="fa-solid fa-camera text-white text-sm" />
-                    <span className="text-white text-[9px] mt-0.5 font-medium">Change</span></>
-              }
-            </div>
-          </div>
-          {/* Hidden file input */}
-          <input ref={photoInputRef} type="file" accept={PHOTO_ACCEPT} className="hidden" onChange={handlePhotoChange} />
+          <ProfilePhotoPicker size="md" />
 
           <div className="min-w-0">
             <p className="text-portal-muted text-xs">Welcome back,</p>
@@ -134,7 +67,7 @@ function DashboardPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <div>
               <p className="text-3xl font-bold text-portal-text">{points.total.toLocaleString()}</p>
               <Link to="/profile" className="text-xs text-portal-muted hover:text-portal-gold mt-0.5 inline-block">

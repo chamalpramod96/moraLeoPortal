@@ -1,25 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
 import { getMembers } from '../services/memberService';
+import { useAsync } from './useAsync';
 
+/** All members, sorted by name: { members, loading, error, refetch }. */
 export function useMembers() {
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-
-  const fetchMembers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getMembers();
-      setMembers(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchMembers(); }, [fetchMembers]);
-
-  return { members, loading, error, refetch: fetchMembers };
+  const { data, ...rest } = useAsync(getMembers, []);
+  return { members: data, ...rest };
 }

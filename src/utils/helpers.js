@@ -1,20 +1,27 @@
+/** A Firestore Timestamp, JS Date or date string as a JS Date. */
+const toJsDate = (value) => (value?.toDate ? value.toDate() : new Date(value));
+
 /**
  * Format a Firestore Timestamp (or JS Date / ISO string) → readable date string.
  */
 export function formatDate(timestamp) {
   if (!timestamp) return 'N/A';
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  return date.toLocaleDateString('en-US', {
+  return toJsDate(timestamp).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
 }
 
 export function formatDateShort(timestamp) {
   if (!timestamp) return 'N/A';
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  return date.toLocaleDateString('en-US', {
+  return toJsDate(timestamp).toLocaleDateString('en-US', {
     year: 'numeric', month: 'short', day: 'numeric',
   });
+}
+
+/** A stored date as a date-input value ('YYYY-MM-DD', local time), or ''. */
+export function toDateInputValue(timestamp) {
+  if (!timestamp) return '';
+  return toJsDate(timestamp).toLocaleDateString('en-CA');   // en-CA formats as YYYY-MM-DD
 }
 
 /**

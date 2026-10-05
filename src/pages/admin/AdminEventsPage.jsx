@@ -1,123 +1,64 @@
-import { useState, useRef }    from 'react';
-import { useNavigate }          from 'react-router-dom';
-import { useAuth }              from '../../context/AuthContext';
-import { useEvents }            from '../../hooks/useEvents';
+import { useState }           from 'react';
+import { useNavigate }        from 'react-router-dom';
+import { useAuth }            from '../../context/AuthContext';
+import { useToast }           from '../../context/ToastContext';
+import { useEvents }          from '../../hooks/useEvents';
 import {
-  addEvent, updateEvent, deleteEvent,
+  createEventFromForm, updateEventFromForm, deleteEvent,
 } from '../../services/eventService';
-import { uploadEventPhoto, deleteEventPhoto } from '../../services/storageService';
-import { useToast }             from '../../context/ToastContext';
 import { refreshLeaderboardSoon } from '../../services/leaderboardService';
-import Modal                    from '../../components/Modal';
-import { auth }                 from '../../services/firebase';
-import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import LoadingSpinner           from '../../components/LoadingSpinner';
-import { formatDateShort }      from '../../utils/helpers';
-import { eventTypeStyle }       from '../../data/eventTypes';
-import EventFormIsolated        from './EventFormIsolated';
-
-const EMPTY_FORM = {
-  title: '', description: '', date: '', location: '', category: 'Service',
-  pointsCategory: '', pointsValue: 0, onlinePointsValue: 0,
-  existingPhotos: [],   // [{ url, type, caption }] — already saved
-  newPhotoFiles:  [],   // [{ file, preview, type, caption }] — newly selected
-};
-
+import Modal                  from '../../components/Modal';
+import PasswordConfirmModal   from '../../components/PasswordConfirmModal';
+import LoadingSpinner         from '../../components/LoadingSpinner';
+import { formatDateShort }    from '../../utils/helpers';
+import { eventTypeStyle }     from '../../data/eventTypes';
+import EventForm, { EMPTY_EVENT_FORM, eventToForm } from './EventForm';
 
 function AdminEventsPage() {
-  const { memberData }           = useAuth();
+  const { memberData }               = useAuth();
   const { events, loading, refetch } = useEvents();
-  const { showToast }            = useToast();
-  const navigate                 = useNavigate();
-  const fileInputRef             = useRef(null);
+  const { showToast }                = useToast();
+  const navigate                     = useNavigate();
 
-  const [showAdd,    setShowAdd]   = useState(false);
-  const [editItem,   setEditItem]  = useState(null);
-  const [delItem,    setDelItem]   = useState(null);
-  const [delPassword, setDelPassword] = useState('');
-  const [delPassError, setDelPassError] = useState('');
-  const [delVerifying, setDelVerifying] = useState(false);
-  const [form,       setForm]      = useState(EMPTY_FORM);  // Only for edit form init
-  const [formError,  setFormError] = useState('');
-  const [saving,     setSaving]    = useState(false);
-
-  const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [editItem,  setEditItem]  = useState(null);   // event being edited
+  const [delItem,   setDelItem]   = useState(null);   // event to delete
+  const [formError, setFormError] = useState('');
+  const [saving,    setSaving]    = useState(false);
 
   const openAdd = () => {
-    setForm({ ...EMPTY_FORM, existingPhotos: [], newPhotoFiles: [] });
     setFormError('');
     setShowAdd(true);
   };
 
   const openEdit = (ev) => {
-    let dateStr = '';
-    if (ev.date) {
-      const d = ev.date.toDate ? ev.date.toDate() : new Date(ev.date);
-      // Use toLocaleDateString to match the display format, then convert to YYYY-MM-DD
-      const localDate = d.toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD format
-      dateStr = localDate;
-    }
-    setForm({
-      ...EMPTY_FORM,
-      ...ev,
-      date:           dateStr,
-      pointsCategory: ev.pointsCategory ?? '',
-      pointsValue:    ev.pointsValue    ?? 0,
-      onlinePointsValue: ev.onlinePointsValue ?? 0,
-      existingPhotos: ev.photos         ?? [],
-      newPhotoFiles:  [],
-    });
     setFormError('');
     setEditItem(ev);
-  };
-
-  // ── Build final photos array and upload new files ──────────────────────────
-  const resolvePhotos = async (eventId, formData) => {
-    // Clean existing photos to only have safe properties for Firestore
-    const existing = (formData?.existingPhotos ?? []).map(p => ({
-      url: p.url,
-      type: p.type,
-      caption: p.caption || ''
-    }));
-    // Upload new files and convert to photos with URLs
-    const uploads  = await Promise.all(
-      (formData?.newPhotoFiles ?? []).map(async (p) => {
-        const url = await uploadEventPhoto(eventId, p.file);
-        return { url, type: p.type, caption: p.caption || '' };
-      })
-    );
-    return [...existing, ...uploads];
   };
 
   const handleAdd = async (formData) => {
     if (!formData.title || !formData.date) { setFormError('Title and Date are required.'); return; }
     setSaving(true);
     setFormError('');
-    // Exclude photo arrays before creating the event
-    const { existingPhotos, newPhotoFiles, ...cleanFormData } = formData;
-    let ref;
+    let result;
     try {
-      // Create event first to get its ID, then upload photos
-      ref = await addEvent({ ...cleanFormData, photos: [] }, memberData.email);
+      result = await createEventFromForm(formData, memberData.email);
     } catch (err) {
       setFormError(err.message);
       setSaving(false);
       return;
     }
-    // The event exists from here on. Close the form even if photos fail, so a
-    // second "Add" click can't create a duplicate event.
-    const eventId = ref?.id ?? 'demo-new';
-    try {
-      const photos = await resolvePhotos(eventId, formData);
-      if (photos.length > 0 && ref?.id) await updateEvent(eventId, { photos });
-      showToast(`Event "${formData.title}" created.`, 'success');
-    } catch {
-      showToast(`Event "${formData.title}" created, but the photos failed to upload. Edit the event to add them.`, 'error');
-    } finally {
-      setShowAdd(false);
-      setSaving(false);
-      refetch();
-    }
+    // The event exists from here on. Close the form even if photos failed, so
+    // a second "Add" click can't create a duplicate event.
+    showToast(
+      result.photosSaved
+        ? `Event "${formData.title}" created.`
+        : `Event "${formData.title}" created, but the photos failed to upload. Edit the event to add them.`,
+      result.photosSaved ? 'success' : 'error',
+    );
+    setShowAdd(false);
+    setSaving(false);
+    refetch();
   };
 
   const handleEdit = async (formData) => {
@@ -125,22 +66,7 @@ function AdminEventsPage() {
     setSaving(true);
     setFormError('');
     try {
-      // Find photos that were removed
-      const originalPhotoUrls = new Set(form.existingPhotos?.map(p => p.url) ?? []);
-      const newPhotoUrls = new Set(formData.existingPhotos?.map(p => p.url) ?? []);
-      const removedPhotoUrls = [...originalPhotoUrls].filter(url => !newPhotoUrls.has(url));
-
-      const photos = await resolvePhotos(editItem.id, formData);
-      // Destructure to exclude photo-related fields from formData before sending to Firestore
-      const { existingPhotos, newPhotoFiles, ...cleanFormData } = formData;
-      await updateEvent(editItem.id, { ...cleanFormData, photos });
-
-      // Only now that the event no longer references them, delete removed
-      // photos from Storage — deleting first left broken images if the save failed.
-      if (!IS_DEMO) {
-        await Promise.all(removedPhotoUrls.map(url => deleteEventPhoto(url)));
-      }
-
+      await updateEventFromForm(editItem.id, formData, editItem.photos ?? []);
       showToast('Event updated.', 'success');
       refreshLeaderboardSoon();
       setEditItem(null);
@@ -152,41 +78,13 @@ function AdminEventsPage() {
     }
   };
 
-  const openDeleteDialog = (ev) => {
-    setDelItem(ev);
-    setDelPassword('');
-    setDelPassError('');
-  };
-
-  const handleDeleteConfirm = async (e) => {
-    e.preventDefault();
-    if (!delPassword.trim()) {
-      setDelPassError('Please enter your password.');
-      return;
-    }
-    setDelVerifying(true);
-    setDelPassError('');
-    try {
-      // Verify password before deleting
-      if (IS_DEMO) {
-        if (delPassword !== 'demo1234') throw new Error('wrong-password');
-      } else {
-        const credential = EmailAuthProvider.credential(memberData.email, delPassword);
-        await reauthenticateWithCredential(auth.currentUser, credential);
-      }
-      await deleteEvent(delItem.id);
-      showToast(`"${delItem.title}" deleted.`, 'success');
-      refreshLeaderboardSoon();
-      refetch();
-      setDelItem(null);
-    } catch (err) {
-      const isWrong = err.code === 'auth/wrong-password'
-        || err.code === 'auth/invalid-credential'
-        || err.message === 'wrong-password';
-      setDelPassError(isWrong ? 'Incorrect password. Try again.' : 'Delete failed. Please try again.');
-    } finally {
-      setDelVerifying(false);
-    }
+  // Throws on failure, so the dialog shows its error and stays open.
+  const handleDelete = async () => {
+    await deleteEvent(delItem.id);
+    showToast(`"${delItem.title}" deleted.`, 'success');
+    refreshLeaderboardSoon();
+    refetch();
+    setDelItem(null);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -272,7 +170,7 @@ function AdminEventsPage() {
                   className="text-portal-muted hover:text-portal-gold transition-colors p-2">
                   <i className="fa-solid fa-pen-to-square" />
                 </button>
-                <button onClick={() => openDeleteDialog(ev)} title="Delete"
+                <button onClick={() => setDelItem(ev)} title="Delete"
                   className="text-portal-muted hover:text-red-400 transition-colors p-2">
                   <i className="fa-solid fa-trash" />
                 </button>
@@ -285,16 +183,14 @@ function AdminEventsPage() {
       {/* Add Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="New Event">
         {showAdd && (
-          <EventFormIsolated
+          <EventForm
             key="add-form"
-            initialFormData={EMPTY_FORM}
+            initialFormData={EMPTY_EVENT_FORM}
             formError={formError}
             saving={saving}
             isAdd={true}
             onSubmit={handleAdd}
             onCancel={() => setShowAdd(false)}
-            fileInputRef={fileInputRef}
-            IS_DEMO={IS_DEMO}
           />
         )}
       </Modal>
@@ -302,84 +198,33 @@ function AdminEventsPage() {
       {/* Edit Modal */}
       <Modal isOpen={!!editItem} onClose={() => setEditItem(null)} title="Edit Event">
         {!!editItem && (
-          <EventFormIsolated
+          <EventForm
             key="edit-form"
-            initialFormData={form}
+            initialFormData={eventToForm(editItem)}
             formError={formError}
             saving={saving}
             isAdd={false}
             onSubmit={handleEdit}
             onCancel={() => setEditItem(null)}
-            fileInputRef={fileInputRef}
-            IS_DEMO={IS_DEMO}
           />
         )}
       </Modal>
 
-      {/* Delete — password-protected modal */}
-      <Modal
+      {/* Delete — password-protected */}
+      <PasswordConfirmModal
         isOpen={!!delItem}
         onClose={() => setDelItem(null)}
+        onConfirm={handleDelete}
         title="Delete Event"
-        size="sm"
+        confirmText="Delete Event"
+        busyText="Verifying…"
+        failureMessage="Delete failed. Please try again."
       >
-        <form onSubmit={handleDeleteConfirm} className="space-y-4">
-          {/* Warning banner */}
-          <div className="flex gap-3 bg-red-950/50 border border-red-700/40 rounded-lg px-4 py-3">
-            <i className="fa-solid fa-triangle-exclamation text-red-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-portal-text">
-              Delete <span className="font-semibold text-portal-gold">&ldquo;{delItem?.title}&rdquo;</span>?
-              {' '}This will also remove all attendance records for this event.
-            </p>
-          </div>
-
-          {/* Password input */}
-          <div>
-            <label className="block text-xs text-portal-muted mb-1">
-              Enter your password to confirm
-            </label>
-            <input
-              type="password"
-              autoFocus
-              value={delPassword}
-              onChange={e => { setDelPassword(e.target.value); setDelPassError(''); }}
-              placeholder="Your account password"
-              className="w-full bg-portal-bg border border-white/10 rounded-lg px-3 py-2
-                         text-portal-text text-sm focus:outline-none focus:border-red-500/60
-                         placeholder:text-portal-muted/50"
-            />
-            {delPassError && (
-              <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
-                <i className="fa-solid fa-circle-exclamation" />{delPassError}
-              </p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => setDelItem(null)}
-              className="px-4 py-2 rounded-lg text-sm text-portal-muted hover:text-portal-text
-                         border border-white/10 hover:border-white/20 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={delVerifying}
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-700 hover:bg-red-600
-                         text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors
-                         flex items-center gap-2"
-            >
-              {delVerifying
-                ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Verifying…</>
-                : <><i className="fa-solid fa-trash" />Delete Event</>
-              }
-            </button>
-          </div>
-        </form>
-      </Modal>
+        <p className="text-sm text-portal-text">
+          Delete <span className="font-semibold text-portal-gold">&ldquo;{delItem?.title}&rdquo;</span>?
+          {' '}This will also remove all attendance records for this event.
+        </p>
+      </PasswordConfirmModal>
     </div>
   );
 }

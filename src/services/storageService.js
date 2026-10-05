@@ -1,7 +1,15 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from './firebase';
+import { IS_DEMO } from '../config/env';
 
-const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+/**
+ * Storage paths (each one guarded by storage.rules):
+ *   profiles/{email}/photo        — one profile photo per member
+ *   events/{eventId}/{filename}   — event photos and sign sheets
+ * Project images and orientation files are handled by their own services.
+ */
+
+const profilePhotoRef = (email) => ref(storage, `profiles/${email.toLowerCase()}/photo`);
 
 /**
  * Upload one photo file for an event.
@@ -28,7 +36,7 @@ export async function uploadProfilePhoto(email, file) {
   if (IS_DEMO) {
     return URL.createObjectURL(file);
   }
-  const photoRef = ref(storage, `profiles/${email.toLowerCase()}/photo`);
+  const photoRef = profilePhotoRef(email);
   await uploadBytes(photoRef, file, { contentType: file.type });
   return await getDownloadURL(photoRef);
 }
@@ -39,7 +47,7 @@ export async function uploadProfilePhoto(email, file) {
 export async function deleteProfilePhoto(email) {
   if (IS_DEMO) return;
   try {
-    await deleteObject(ref(storage, `profiles/${email.toLowerCase()}/photo`));
+    await deleteObject(profilePhotoRef(email));
   } catch (err) {
     if (err.code !== 'storage/object-not-found') {
       console.warn('[storageService] deleteProfilePhoto skipped:', err.code);
@@ -54,8 +62,7 @@ export async function deleteProfilePhoto(email) {
 export async function deleteEventPhoto(url) {
   if (IS_DEMO || !url || url.startsWith('blob:')) return;
   try {
-    const photoRef = ref(storage, url);
-    await deleteObject(photoRef);
+    await deleteObject(ref(storage, url));
   } catch (err) {
     // Not critical — file may already be gone
     console.warn('[storageService] deleteEventPhoto skipped:', err.code);

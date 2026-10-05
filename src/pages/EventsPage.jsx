@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useAuth }                       from '../context/AuthContext';
+import { useAsync }                      from '../hooks/useAsync';
 import { getEvents, getMemberAttendance } from '../services/eventService';
 import Badge                              from '../components/Badge';
 import LoadingSpinner                     from '../components/LoadingSpinner';
@@ -7,32 +8,21 @@ import { formatDateShort, safeHttpsUrl }  from '../utils/helpers';
 import { EVENT_TYPES, eventTypeStyle }  from '../data/eventTypes';
 
 const CATEGORIES = ['All', ...EVENT_TYPES];
+const NO_DATA    = { events: [], attendance: [] };
 
 function EventsPage() {
   const { memberData }       = useAuth();
-  const [events,      setEvents]     = useState([]);
-  const [attendance,  setAttendance] = useState([]);
-  const [loading,     setLoading]    = useState(true);
   const [search,      setSearch]     = useState('');
   const [category,    setCategory]   = useState('All');
   const [dateFrom,    setDateFrom]   = useState('');
 
   const email = memberData?.email;
-  useEffect(() => {
-    if (!email) return;
-    (async () => {
-      try {
-        const [evList, attList] = await Promise.all([
-          getEvents(),
-          getMemberAttendance(email),
-        ]);
-        setEvents(evList);
-        setAttendance(attList);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const fetchEvents = useCallback(async () => {
+    if (!email) return NO_DATA;
+    const [events, attendance] = await Promise.all([getEvents(), getMemberAttendance(email)]);
+    return { events, attendance };
   }, [email]);
+  const { data: { events, attendance }, loading } = useAsync(fetchEvents, NO_DATA);
 
   const filtered = useMemo(() => {
     return events.filter(ev => {
@@ -55,7 +45,6 @@ function EventsPage() {
 
   const getStatus = (eventId) =>
     attendance.find(a => a.eventId === eventId)?.status ?? 'not marked';
-
 
   return (
     <div className="space-y-5">

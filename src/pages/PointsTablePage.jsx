@@ -1,11 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState }               from 'react';
 import { useAuth }                from '../context/AuthContext';
+import { useMemberActivity }      from '../hooks/useMemberActivity';
 import LoadingSpinner             from '../components/LoadingSpinner';
 import { ACTIVE_EVENT_POINT_CATEGORIES, MANUAL_POINT_CATEGORIES, LEVELS, getLevelInfo } from '../data/pointsConfig';
-import { computeMemberPoints, getMemberManualPoints } from '../services/pointsService';
-import { getMemberAttendance, getEvents }              from '../services/eventService';
-import { getProjects }                               from '../services/projectService';
-import { memberKey }                                 from '../utils/helpers';
 
 // ─── Section accordion ────────────────────────────────────────────────────────
 function Section({ title, icon, children, defaultOpen = false }) {
@@ -93,32 +90,11 @@ function LevelLadder({ currentLevel }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PointsTablePage() {
   const { memberData } = useAuth();
-
-  const [loading, setLoading] = useState(true);
-  const [totals,  setTotals]  = useState({ eventPoints: 0, projectPoints: 0, manualPoints: 0, total: 0 });
-
-  const email = memberData?.email;
-  useEffect(() => {
-    if (!email) { setLoading(false); return; }
-    (async () => {
-      try {
-        const [att, events, manualPts, projects, key] = await Promise.all([
-          getMemberAttendance(email),
-          getEvents(),
-          getMemberManualPoints(email),
-          getProjects(),
-          memberKey(email),
-        ]);
-        setTotals(computeMemberPoints(email, att, events, manualPts, projects, key));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [email]);
+  const { points, loading } = useMemberActivity(memberData?.email);
 
   if (loading) return <LoadingSpinner />;
 
-  const { eventPoints, projectPoints, manualPoints, total } = totals;
+  const { eventPoints, projectPoints, manualPoints, total } = points;
   const { current, next, progressPct } = getLevelInfo(total);
 
   return (

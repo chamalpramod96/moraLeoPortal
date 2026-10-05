@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 
 const ToastContext = createContext(null);
 
@@ -36,21 +36,33 @@ function ToastItem({ toast, onRemove }) {
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const timers = useRef(new Set());
 
-  const showToast = useCallback((message, type = 'info', duration = 4000) => {
-    const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, duration);
+  // Don't fire pending timers after the provider is gone
+  useEffect(() => {
+    const pending = timers.current;
+    return () => pending.forEach(clearTimeout);
   }, []);
 
   const removeToast = useCallback((id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  const showToast = useCallback((message, type = 'info', duration = 4000) => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type }]);
+    const timer = setTimeout(() => {
+      timers.current.delete(timer);
+      removeToast(id);
+    }, duration);
+    timers.current.add(timer);
+  }, [removeToast]);
+
+  // Stable value: components using useToast() don't re-render on every toast
+  const value = useMemo(() => ({ showToast }), [showToast]);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={value}>
       {children}
 
       {/* Toast container */}

@@ -31,4 +31,13 @@ function LoadingSpinner({ fullScreen = false, size = 'md', label = 'Loading…' 
   );
 }
 
+/**
+ * Small spinner for inside buttons and overlays.
+ * <InlineSpinner />  ·  <InlineSpinner size="w-4 h-4" gold />
+ */
+export function InlineSpinner({ size = 'w-3.5 h-3.5', gold = false }) {
+  const colors = gold ? 'border-portal-gold/30 border-t-portal-gold' : 'border-white/30 border-t-white';
+  return <div className={`${size} border-2 ${colors} rounded-full animate-spin`} />;
+}
+
 export default LoadingSpinner;

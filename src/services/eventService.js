@@ -1,40 +1,38 @@
 import {
   collection, doc, getDocs, getDoc,
   addDoc, updateDoc, writeBatch,
-  query, where, orderBy, serverTimestamp, Timestamp,
+  query, where, orderBy, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { uploadEventPhoto, deleteEventPhoto } from './storageService';
+import { docsWithIds, withId, dateInputToTimestamp, deleteInBatches, logDemoWrite } from './firestoreUtils';
 import { MOCK_EVENTS, MOCK_ATTENDANCE } from '../data/mockData';
-import { deleteEventPhoto } from './storageService';
+import { IS_DEMO } from '../config/env';
 
-const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+/**
+ * Events (events/{id}) and attendance (attendance/{id}, one record per
+ * member per event: { eventId, memberId, status, markedBy, markedAt }).
+ */
 
 // ─── Events ────────────────────────────────────────────────────────────────
 
 export async function getEvents() {
   if (IS_DEMO) return [...MOCK_EVENTS].sort((a, b) => b.date.toDate() - a.date.toDate());
-  const q    = query(collection(db, 'events'), orderBy('date', 'desc'));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return docsWithIds(await getDocs(query(collection(db, 'events'), orderBy('date', 'desc'))));
 }
 
 export async function getEvent(eventId) {
   if (IS_DEMO) return MOCK_EVENTS.find(e => e.id === eventId) ?? null;
   const snap = await getDoc(doc(db, 'events', eventId));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() };
+  return snap.exists() ? withId(snap) : null;
 }
 
 export async function addEvent(eventData, createdBy) {
-  if (IS_DEMO) { console.info('[DEMO] addEvent — not persisted.'); return { id: 'demo-new' }; }
-  const dateTs = eventData.date
-    ? Timestamp.fromDate(new Date(eventData.date + 'T00:00:00'))
-    : serverTimestamp();
-
+  if (IS_DEMO) { logDemoWrite('addEvent'); return { id: 'demo-new' }; }
   return await addDoc(collection(db, 'events'), {
     title:          eventData.title          ?? '',
     description:    eventData.description    ?? '',
-    date:           dateTs,
+    date:           eventData.date ? dateInputToTimestamp(eventData.date) : serverTimestamp(),
     location:       eventData.location       ?? '',
     category:       eventData.category       ?? 'Service',
     pointsCategory: eventData.pointsCategory ?? '',
@@ -48,58 +46,97 @@ export async function addEvent(eventData, createdBy) {
 }
 
 export async function updateEvent(eventId, updates) {
-  if (IS_DEMO) { console.info('[DEMO] updateEvent — not persisted.'); return; }
+  if (IS_DEMO) { logDemoWrite('updateEvent'); return; }
   // `id` is the document key the UI carries around, not a field to store
-  const { id, ...payload } = updates;
-  if (updates.date && typeof updates.date === 'string') {
-    payload.date = Timestamp.fromDate(new Date(updates.date + 'T00:00:00'));
-  }
+  const { id: _id, ...payload } = updates;
+  if (typeof updates.date === 'string' && updates.date) payload.date = dateInputToTimestamp(updates.date);
   if (updates.pointsValue !== undefined) payload.pointsValue = Number(updates.pointsValue);
   if (updates.onlinePointsValue !== undefined) payload.onlinePointsValue = Number(updates.onlinePointsValue);
   await updateDoc(doc(db, 'events', eventId), payload);
 }
 
 export async function deleteEvent(eventId) {
-  if (IS_DEMO) { console.info('[DEMO] deleteEvent — not persisted.'); return; }
+  if (IS_DEMO) { logDemoWrite('deleteEvent'); return; }
   // Grab photo URLs first so we can clean up Storage after the Firestore delete
   const eventSnap = await getDoc(doc(db, 'events', eventId));
   const photos    = eventSnap.exists() ? (eventSnap.data().photos ?? []) : [];
 
-  // Cascade: delete all attendance records for this event first
-  const attSnap = await getDocs(
-    query(collection(db, 'attendance'), where('eventId', '==', eventId))
-  );
-  const batch = writeBatch(db);
-  attSnap.docs.forEach(d => batch.delete(d.ref));
-  batch.delete(doc(db, 'events', eventId));
-  await batch.commit();
+  // Cascade: the event's attendance records, then the event itself (one
+  // atomic batch for any normal event; the event goes last either way).
+  const attSnap = await getDocs(query(collection(db, 'attendance'), where('eventId', '==', eventId)));
+  await deleteInBatches([...attSnap.docs.map(d => d.ref), doc(db, 'events', eventId)]);
 
   // Best-effort Storage cleanup — a failed delete here shouldn't block the
   // event from being removed (the Firestore state is already authoritative).
   await Promise.all(photos.map(p => deleteEventPhoto(p?.url)));
 }
 
+// ─── Event photos (event form) ─────────────────────────────────────────────
+// The form keeps photos already saved ({ url, type, caption }) apart from
+// newly picked files ({ file, preview, type, caption }).
+
+/** Uploads the new files and returns the full photos array to store. */
+async function resolveEventPhotos(eventId, existingPhotos = [], newPhotoFiles = []) {
+  // Only the fields Firestore should hold
+  const kept = existingPhotos.map(p => ({ url: p.url, type: p.type, caption: p.caption || '' }));
+  const uploaded = await Promise.all(newPhotoFiles.map(async (p) => ({
+    url:     await uploadEventPhoto(eventId, p.file),
+    type:    p.type,
+    caption: p.caption || '',
+  })));
+  return [...kept, ...uploaded];
+}
+
+/**
+ * Creates an event from the event form, then uploads its photos (the event id
+ * is needed for their storage path). Throws if the event couldn't be created;
+ * once it exists, returns { photosSaved } instead, so a photo failure isn't
+ * mistaken for a failed create (and the form isn't submitted twice).
+ */
+export async function createEventFromForm(formData, createdBy) {
+  const { existingPhotos, newPhotoFiles, ...fields } = formData;
+  const { id } = await addEvent({ ...fields, photos: [] }, createdBy);
+  try {
+    const photos = await resolveEventPhotos(id, existingPhotos, newPhotoFiles);
+    if (photos.length > 0) await updateEvent(id, { photos });
+    return { photosSaved: true };
+  } catch {
+    return { photosSaved: false };
+  }
+}
+
+/**
+ * Saves the event form for an existing event. Photos the admin removed are
+ * deleted from Storage only after the event stops referencing them —
+ * deleting first left broken images if the save failed.
+ */
+export async function updateEventFromForm(eventId, formData, originalPhotos = []) {
+  const { existingPhotos = [], newPhotoFiles, ...fields } = formData;
+  const keptUrls = new Set(existingPhotos.map(p => p.url));
+  const removed  = originalPhotos.filter(p => !keptUrls.has(p.url));
+
+  const photos = await resolveEventPhotos(eventId, existingPhotos, newPhotoFiles);
+  await updateEvent(eventId, { ...fields, photos });
+  await Promise.all(removed.map(p => deleteEventPhoto(p.url)));
+}
+
 // ─── Attendance ────────────────────────────────────────────────────────────
 
 export async function getAttendanceForEvent(eventId) {
   if (IS_DEMO) return MOCK_ATTENDANCE.filter(a => a.eventId === eventId);
-  const q    = query(collection(db, 'attendance'), where('eventId', '==', eventId));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return docsWithIds(await getDocs(query(collection(db, 'attendance'), where('eventId', '==', eventId))));
 }
 
 export async function getMemberAttendance(memberEmail) {
-  if (IS_DEMO) return MOCK_ATTENDANCE.filter(a => a.memberId === memberEmail.toLowerCase());
-  const q    = query(collection(db, 'attendance'), where('memberId', '==', memberEmail.toLowerCase()));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const memberId = memberEmail.toLowerCase();
+  if (IS_DEMO) return MOCK_ATTENDANCE.filter(a => a.memberId === memberId);
+  return docsWithIds(await getDocs(query(collection(db, 'attendance'), where('memberId', '==', memberId))));
 }
 
 /** All attendance records (admin only — rules deny this query to members). */
 export async function getAllAttendance() {
   if (IS_DEMO) return MOCK_ATTENDANCE;
-  const snap = await getDocs(collection(db, 'attendance'));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return docsWithIds(await getDocs(collection(db, 'attendance')));
 }
 
 /**
@@ -107,14 +144,15 @@ export async function getAllAttendance() {
  * Records of members not in `records` (e.g. deactivated members, who aren't
  * shown on the attendance page) are left untouched, so their history and
  * points survive a re-save.
- * records: [{ memberId: string, status: 'attended'|'absent'|'excused' }]
+ * records: [{ memberId: string, status: 'attended'|'attended_online'|'absent'|'excused' }]
  */
 export async function saveEventAttendance(eventId, records, markedBy) {
-  if (IS_DEMO) { console.info('[DEMO] saveEventAttendance — not persisted.'); return; }
+  if (IS_DEMO) { logDemoWrite('saveEventAttendance'); return; }
   const existing = await getAttendanceForEvent(eventId);
   const savedIds = new Set(records.map(r => r.memberId));
 
   // Single atomic batch: either every delete + write succeeds, or none do.
+  // (Fits the 500-write limit for up to ~250 active members.)
   const batch = writeBatch(db);
   existing
     .filter(a => savedIds.has(a.memberId))

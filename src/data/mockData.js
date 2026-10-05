@@ -1,14 +1,18 @@
-﻿/**
- * Mock data — DEMO MODE ONLY (VITE_DEMO_MODE=true)
+/**
+ * Mock data — DEMO MODE ONLY (VITE_DEMO_MODE=true).
  *
- * In production (VITE_DEMO_MODE=false) this file is never imported —
- * it is completely tree-shaken from the production bundle by Vite/Rollup.
+ * The services return these arrays instead of reading Firestore when demo
+ * mode is on. They're empty here; to try the portal locally without
+ * Firebase, add test records (same shapes as the Firestore documents —
+ * dates as { toDate: () => Date }) and sign in with a member's email and
+ * the demo password (VITE_DEMO_PASSWORD, default "demo1234").
  *
- * To re-enable demo for local testing: set VITE_DEMO_MODE=true in .env
- * and re-add test data into the arrays below.
+ * Production builds have VITE_DEMO_MODE=false, so none of this is used.
  */
 
-export const MOCK_MEMBERS      = [];
+export const MOCK_MEMBERS       = [];
 export const MOCK_EVENTS        = [];
 export const MOCK_ATTENDANCE    = [];
 export const MOCK_MEMBER_POINTS = [];
+export const MOCK_PROJECTS      = [];
+export const MOCK_ORIENTATION   = [];

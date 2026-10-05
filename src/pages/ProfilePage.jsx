@@ -1,53 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState }            from 'react';
 import { useAuth }             from '../context/AuthContext';
-import { getEvents, getMemberAttendance } from '../services/eventService';
-import { getMemberManualPoints, computeMemberPoints, projectRolesFor, eventPointsFor } from '../services/pointsService';
-import { getProjects } from '../services/projectService';
-import { sendSetPasswordEmail } from '../services/memberService';
-import { useProfilePhoto }       from '../hooks/useProfilePhoto';
 import { useToast }            from '../context/ToastContext';
+import { useMemberActivity }   from '../hooks/useMemberActivity';
+import { projectRolesFor, eventPointsFor } from '../domain/points';
+import { sendSetPasswordEmail } from '../services/memberService';
 import Badge                   from '../components/Badge';
-import LoadingSpinner          from '../components/LoadingSpinner';
+import LoadingSpinner, { InlineSpinner } from '../components/LoadingSpinner';
+import StatCard                from '../components/StatCard';
+import ProfilePhotoPicker      from '../components/ProfilePhotoPicker';
 import { getManualCategory, isAttended } from '../data/pointsConfig';
-import { formatDate, formatDateShort, calcAttendanceRate, rateColor, memberKey, PHOTO_ACCEPT } from '../utils/helpers';
+import { formatDate, formatDateShort, calcAttendanceRate, rateColor } from '../utils/helpers';
 
 function ProfilePage() {
   const { memberData }       = useAuth();
   const { showToast }        = useToast();
-  const { uploading, inputRef: photoInputRef, handleChange: handlePhotoChange } = useProfilePhoto();
-  const [events,      setEvents]      = useState([]);
-  const [attendance,  setAttendance]  = useState([]);
-  const [manualPts,   setManualPts]   = useState([]);
-  const [projects,    setProjects]    = useState([]);
-  const [myKey,       setMyKey]       = useState(null);
-  const [loading,     setLoading]     = useState(false);
+  // Total = events + project roles (+ any manual points), same as Leaderboard
+  const {
+    events, attendance, manualPoints: manualPts, projects, key: myKey, points, loading,
+  } = useMemberActivity(memberData?.email);
   const [downloading, setDownloading] = useState(false);
   const [pwSending,   setPwSending]   = useState(false);
-
-  // Keyed on email so a profile-photo change doesn't reload the whole page
-  const email = memberData?.email;
-  useEffect(() => {
-    if (!email) return;
-    (async () => {
-      setLoading(true);
-      try {
-        const [evList, attList, mp, projList, key] = await Promise.all([
-          getEvents(),
-          getMemberAttendance(email),
-          getMemberManualPoints(email),
-          getProjects(),
-          memberKey(email),
-        ]);
-        setEvents(evList);
-        setAttendance(attList);
-        setManualPts(mp);
-        setProjects(projList);
-        setMyKey(key);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [email]);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -82,10 +54,7 @@ function ProfilePage() {
 
   const attended  = attendance.filter(a => isAttended(a.status)).length;
   const rate      = calcAttendanceRate(attended, attendance.length);
-
-  // Total = events + project roles (+ any manual points), same as Leaderboard
-  const points  = computeMemberPoints(memberData?.email ?? '', attendance, events, manualPts, projects, myKey);
-  const myRoles = projectRolesFor(myKey, projects);
+  const myRoles   = projectRolesFor(myKey, projects);
 
   // Join attendance with events
   const attWithEvent = attendance.map(rec => ({
@@ -112,40 +81,7 @@ function ProfilePage() {
       {/* ── Profile card ──────────────────────────────────────────── */}
       <div className="card-gold rounded-xl p-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-          {/* Avatar — click to change photo */}
-          <div
-            className="relative w-20 h-20 rounded-full bg-portal-red/20 border-2 border-portal-gold/50
-                        flex items-center justify-center flex-shrink-0 overflow-hidden self-center
-                        cursor-pointer group"
-            onClick={() => !uploading && photoInputRef.current?.click()}
-            title="Change profile photo"
-          >
-            {memberData?.profilePhoto
-              ? <img src={memberData.profilePhoto} alt="" className="w-full h-full object-cover" />
-              : <span className="text-3xl font-bold text-portal-gold">
-                  {memberData?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
-                </span>
-            }
-            {/* Hover overlay */}
-            <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center
-                            opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              {uploading
-                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <>
-                    <i className="fa-solid fa-camera text-white text-base" />
-                    <span className="text-white text-[9px] mt-0.5 font-medium">Change</span>
-                  </>
-              }
-            </div>
-          </div>
-          {/* Hidden file input */}
-          <input
-            ref={photoInputRef}
-            type="file"
-            accept={PHOTO_ACCEPT}
-            className="hidden"
-            onChange={handlePhotoChange}
-          />
+          <ProfilePhotoPicker size="lg" className="self-center" />
 
           <div className="flex-1">
             <h1 className="text-xl font-bold text-portal-text">{memberData?.fullName}</h1>
@@ -175,7 +111,7 @@ function ProfilePage() {
             >
               {downloading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-portal-gold/30 border-t-portal-gold rounded-full animate-spin" />
+                  <InlineSpinner size="w-4 h-4" gold />
                   Generating…
                 </>
               ) : (
@@ -201,18 +137,9 @@ function ProfilePage() {
 
       {/* ── Attendance summary stats ───────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="card rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-portal-gold">{attendance.length}</div>
-          <div className="text-portal-muted text-xs mt-1">Total</div>
-        </div>
-        <div className="card rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">{attended}</div>
-          <div className="text-portal-muted text-xs mt-1">Attended</div>
-        </div>
-        <div className="card rounded-xl p-4 text-center">
-          <div className={`text-2xl font-bold ${rateColor(rate, attendance.length > 0)}`}>{rate}%</div>
-          <div className="text-portal-muted text-xs mt-1">Rate</div>
-        </div>
+        <StatCard size="text-2xl" value={attendance.length} label="Total" />
+        <StatCard size="text-2xl" value={attended} label="Attended" color="text-green-400" />
+        <StatCard size="text-2xl" value={`${rate}%`} label="Rate" color={rateColor(rate, attendance.length > 0)} />
       </div>
       {/* ── Mora Connect Points ──────────────────────────────────────────── */}
       <div className="card rounded-xl overflow-hidden">

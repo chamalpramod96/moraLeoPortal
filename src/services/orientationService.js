@@ -4,15 +4,16 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './firebase';
-
-const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
+import { docsWithIds, logDemoWrite } from './firestoreUtils';
+import { MOCK_ORIENTATION } from '../data/mockData';
+import { IS_DEMO } from '../config/env';
 
 export const MAX_ORIENTATION_MB = 25;
 
 /**
  * Allowed orientation files, by extension. The content type sent to Storage
  * comes from this table (not the browser, which leaves it blank for some
- * files on Windows). Keep in sync with isOrientationFile() in storage.rules.
+ * files on Windows). Keep in sync with the orientation match in storage.rules.
  */
 export const ORIENTATION_TYPES = {
   pdf:  { type: 'application/pdf',                                                          icon: 'fa-file-pdf',        color: 'text-red-400'    },
@@ -46,9 +47,8 @@ export function validateOrientationFile(file) {
 }
 
 export async function getOrientationFiles() {
-  if (IS_DEMO) return [];
-  const snap = await getDocs(query(collection(db, 'orientation'), orderBy('uploadedAt', 'desc')));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (IS_DEMO) return MOCK_ORIENTATION;
+  return docsWithIds(await getDocs(query(collection(db, 'orientation'), orderBy('uploadedAt', 'desc'))));
 }
 
 /**
@@ -56,7 +56,7 @@ export async function getOrientationFiles() {
  * onProgress(percent) is called while uploading.
  */
 export async function uploadOrientationFile({ title, description, file, uploadedBy }, onProgress) {
-  if (IS_DEMO) { console.info('[DEMO] uploadOrientationFile — not persisted.'); return; }
+  if (IS_DEMO) { logDemoWrite('uploadOrientationFile'); return; }
   const ext      = fileExtension(file.name);
   const docRef   = doc(collection(db, 'orientation'));
   const safeName = file.name.replace(/[^\w.-]+/g, '_');
@@ -100,7 +100,7 @@ export async function uploadOrientationFile({ title, description, file, uploaded
  * Remove the record first (members stop seeing it immediately), then the file.
  */
 export async function deleteOrientationFile(item) {
-  if (IS_DEMO) { console.info('[DEMO] deleteOrientationFile — not persisted.'); return; }
+  if (IS_DEMO) { logDemoWrite('deleteOrientationFile'); return; }
   await deleteDoc(doc(db, 'orientation', item.id));
   if (item.storagePath) {
     await deleteObject(ref(storage, item.storagePath)).catch(err => {

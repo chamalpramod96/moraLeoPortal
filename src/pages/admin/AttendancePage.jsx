@@ -5,7 +5,8 @@ import { getEvent, getAttendanceForEvent, saveEventAttendance } from '../../serv
 import { getMembers }            from '../../services/memberService';
 import { useToast }              from '../../context/ToastContext';
 import { refreshLeaderboardSoon } from '../../services/leaderboardService';
-import LoadingSpinner            from '../../components/LoadingSpinner';
+import LoadingSpinner, { InlineSpinner } from '../../components/LoadingSpinner';
+import MemberAvatar              from '../../components/MemberAvatar';
 import { formatDate, safeHttpsUrl } from '../../utils/helpers';
 import { getEventCategory, isHybridEvent } from '../../data/pointsConfig';
 
@@ -120,11 +121,8 @@ function AttendancePage() {
   const hybrid   = isHybridEvent(event);
   const statuses = hybrid ? HYBRID_STATUSES : STATUSES;
   const labels   = hybrid ? HYBRID_LABELS : STATUS_LABELS;
-  const count    = (s) => Object.values(statusMap).filter(v => v === s).length;
-  const counts   = {
-    attended: count('attended'), attended_online: count('attended_online'),
-    absent:   count('absent'),   excused:         count('excused'),
-  };
+  const counts   = { attended: 0, attended_online: 0, absent: 0, excused: 0 };
+  Object.values(statusMap).forEach(s => { if (s in counts) counts[s]++; });
 
   return (
     <div className="space-y-5">
@@ -221,7 +219,7 @@ function AttendancePage() {
             className="bg-portal-red hover:bg-portal-red-dark disabled:opacity-50 text-white
                        font-semibold px-4 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-colors">
             {saving
-              ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
+              ? <><InlineSpinner />Saving…</>
               : <><i className="fa-solid fa-floppy-disk" />Save</>
             }
           </button>
@@ -249,15 +247,7 @@ function AttendancePage() {
                 >
                   {/* Member info */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-portal-red/20 border border-portal-gold/30
-                                    flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {m.profilePhoto
-                        ? <img src={m.profilePhoto} alt="" className="w-full h-full object-cover" />
-                        : <span className="text-xs font-bold text-portal-gold">
-                            {m.fullName?.charAt(0)?.toUpperCase()}
-                          </span>
-                      }
-                    </div>
+                    <MemberAvatar member={m} />
                     <div className="min-w-0">
                       <p className="text-portal-text text-sm font-medium truncate">{m.fullName}</p>
                       <p className="text-portal-muted text-xs">{m.position || 'Member'}</p>
@@ -296,7 +286,7 @@ function AttendancePage() {
                      font-semibold px-6 py-3 rounded-xl text-sm flex items-center gap-2
                      transition-colors shadow-2xl shadow-portal-red/30">
           {saving
-            ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
+            ? <><InlineSpinner size="w-4 h-4" />Saving…</>
             : <><i className="fa-solid fa-floppy-disk" />Save Attendance</>
           }
         </button>

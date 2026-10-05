@@ -3,7 +3,8 @@ import { useAuth }           from '../context/AuthContext';
 import { useToast }          from '../context/ToastContext';
 import Modal                 from '../components/Modal';
 import ConfirmDialog         from '../components/ConfirmDialog';
-import LoadingSpinner        from '../components/LoadingSpinner';
+import LoadingSpinner, { InlineSpinner } from '../components/LoadingSpinner';
+import FormError             from '../components/FormError';
 import { formatDateShort, safeHttpsUrl } from '../utils/helpers';
 import {
   getOrientationFiles, uploadOrientationFile, deleteOrientationFile,
@@ -173,11 +174,7 @@ function OrientationPage() {
       {/* Upload modal (admins) */}
       <Modal isOpen={showUpload} onClose={() => !uploading && setShowUpload(false)} title="Upload Orientation File">
         <form onSubmit={handleUpload} className="space-y-4">
-          {uploadErr && (
-            <p className="text-red-400 text-sm bg-red-900/20 border border-red-600/30 rounded-lg px-3 py-2">
-              <i className="fa-solid fa-circle-exclamation mr-2" />{uploadErr}
-            </p>
-          )}
+          <FormError message={uploadErr} />
 
           <div>
             <label className="block text-xs text-portal-muted mb-1">Title *</label>
@@ -244,7 +241,7 @@ function OrientationPage() {
               className="bg-portal-red hover:bg-portal-red-dark disabled:opacity-50 text-white font-semibold
                          px-5 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
               {uploading
-                ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Uploading…</>
+                ? <><InlineSpinner />Uploading…</>
                 : <><i className="fa-solid fa-upload" />Upload</>
               }
             </button>

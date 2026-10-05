@@ -29,4 +29,9 @@ export default defineConfig(({ mode }) => ({
     },
     chunkSizeWarningLimit: 600,
   },
+  // Unit tests (npm test). The security-rules tests in tests/rules need the
+  // emulators and run separately (npm run test:rules).
+  test: {
+    include: ['src/**/*.test.{js,jsx}'],
+  },
 }))

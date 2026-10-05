@@ -1,37 +1,53 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import FormError         from '../../components/FormError';
+import { InlineSpinner } from '../../components/LoadingSpinner';
 import { getEventCategory, groupedEventCategories } from '../../data/pointsConfig';
-import { PHOTO_ACCEPT, isAllowedPhoto } from '../../utils/helpers';
+import { PHOTO_ACCEPT, isAllowedPhoto, toDateInputValue } from '../../utils/helpers';
 import { EVENT_TYPES } from '../../data/eventTypes';
+import { IS_DEMO } from '../../config/env';
 
-const EMPTY_FORM = {
+const MAX_PHOTOS = 3;
+
+export const EMPTY_EVENT_FORM = {
   title: '', description: '', date: '', location: '', category: 'Service',
   pointsCategory: '', pointsValue: 0, onlinePointsValue: 0,
-  existingPhotos: [],
-  newPhotoFiles: [],
+  existingPhotos: [],   // [{ url, type, caption }] — already saved
+  newPhotoFiles:  [],   // [{ file, preview, type, caption }] — newly selected
 };
 
+/** The form's starting values for an existing event. */
+export function eventToForm(ev) {
+  return {
+    ...EMPTY_EVENT_FORM,
+    ...ev,
+    date:              toDateInputValue(ev.date),
+    pointsCategory:    ev.pointsCategory    ?? '',
+    pointsValue:       ev.pointsValue       ?? 0,
+    onlinePointsValue: ev.onlinePointsValue ?? 0,
+    existingPhotos:    ev.photos            ?? [],
+    newPhotoFiles:     [],
+  };
+}
 
 /**
- * EventFormIsolated — ISOLATED FORM COMPONENT
- * Manages its own form state to prevent parent re-renders from breaking input focus.
- * Parent only calls onSubmit(formData) and onCancel().
+ * Add / edit event form. Keeps its own form state, so typing doesn't
+ * re-render the parent page (which used to break input focus).
+ * The parent handles onSubmit(formData) and onCancel().
  */
-function EventFormIsolated({
-  initialFormData = EMPTY_FORM,
+function EventForm({
+  initialFormData = EMPTY_EVENT_FORM,
   formError = '',
   saving = false,
   isAdd = true,
   onSubmit,
   onCancel = () => {},
-  fileInputRef,
-  IS_DEMO = false,
 }) {
   // Form state is LOCAL to this component
   const [formState, setFormState] = useState(initialFormData);
+  const fileInputRef = useRef(null);
 
   const totalPhotoCount = (formState.existingPhotos?.length ?? 0) + (formState.newPhotoFiles?.length ?? 0);
 
-  // Factory function pattern - same as AddMemberForm (proven to work)
   const handleFieldChange = (key) => (e) => {
     setFormState(prev => ({ ...prev, [key]: e.target.value }));
   };
@@ -51,7 +67,7 @@ function EventFormIsolated({
   const handleFileSelect = (e) => {
     // Skip formats Storage rules reject (e.g. SVG)
     const files = Array.from(e.target.files ?? []).filter(isAllowedPhoto);
-    const remaining = 3 - totalPhotoCount;
+    const remaining = MAX_PHOTOS - totalPhotoCount;
     const toAdd = files.slice(0, remaining).map(file => ({
       file,
       preview: URL.createObjectURL(file),
@@ -103,11 +119,7 @@ function EventFormIsolated({
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-4" noValidate>
-      {formError && (
-        <p className="text-red-400 text-sm bg-red-900/20 border border-red-600/30 rounded-lg px-3 py-2">
-          <i className="fa-solid fa-circle-exclamation mr-2" />{formError}
-        </p>
-      )}
+      <FormError message={formError} />
 
       <div>
         <label className="block text-xs text-portal-muted mb-1">Event Title *</label>
@@ -131,7 +143,7 @@ function EventFormIsolated({
             type="date"
             value={formState.date}
             onChange={handleFieldChange('date')}
-            onFocus={(e) => {
+            onFocus={() => {
               // Prevent auto-scroll when focusing on date input
               const scrollPos = window.scrollY;
               setTimeout(() => window.scrollTo(0, scrollPos), 0);
@@ -231,7 +243,7 @@ function EventFormIsolated({
           <label className="text-xs text-portal-muted">
             <i className="fa-solid fa-images text-portal-gold mr-1" />
             Photos &amp; Sign Sheet
-            <span className="ml-1 text-portal-muted/50">(max 3)</span>
+            <span className="ml-1 text-portal-muted/50">(max {MAX_PHOTOS})</span>
           </label>
           {IS_DEMO && (
             <span className="text-[10px] text-yellow-500 italic">
@@ -290,18 +302,18 @@ function EventFormIsolated({
           </div>
         )}
 
-        {totalPhotoCount < 3 && (
+        {totalPhotoCount < MAX_PHOTOS && (
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="w-full border border-dashed border-white/20 hover:border-portal-gold/50 rounded-lg py-3 text-portal-muted hover:text-portal-gold transition-colors text-sm flex items-center justify-center gap-2"
           >
             <i className="fa-solid fa-camera-retro" />
-            Add Photo ({3 - totalPhotoCount} slot{3 - totalPhotoCount !== 1 ? 's' : ''} left)
+            Add Photo ({MAX_PHOTOS - totalPhotoCount} slot{MAX_PHOTOS - totalPhotoCount !== 1 ? 's' : ''} left)
           </button>
         )}
-        {totalPhotoCount >= 3 && (
-          <p className="text-xs text-portal-muted text-center italic">Maximum 3 photos per event.</p>
+        {totalPhotoCount >= MAX_PHOTOS && (
+          <p className="text-xs text-portal-muted text-center italic">Maximum {MAX_PHOTOS} photos per event.</p>
         )}
       </div>
 
@@ -318,7 +330,7 @@ function EventFormIsolated({
           disabled={saving}
           className="bg-portal-red hover:bg-portal-red-dark disabled:opacity-50 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
         >
-          {saving && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+          {saving && <InlineSpinner />}
           {isAdd ? 'Create Event' : 'Save Changes'}
         </button>
       </div>
@@ -326,4 +338,4 @@ function EventFormIsolated({
   );
 }
 
-export default EventFormIsolated;
+export default EventForm;
