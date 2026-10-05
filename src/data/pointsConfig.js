@@ -6,7 +6,7 @@
 // ─── Level Thresholds (ascending total points) ────────────────────────────────
 // `unlock` is the title shown next to a level — only the top three have one.
 export const LEVELS = [
-  { level: 0,  minPoints: 0,       label: 'Prospect', color: 'text-gray-400',        bg: 'bg-gray-700/30',        border: 'border-gray-600/30',   unlock: ''           },
+  { level: 0,  minPoints: 0,       label: 'Level 00', color: 'text-gray-400',       bg: 'bg-gray-700/30',        border: 'border-gray-600/30',   unlock: ''           },
   { level: 1,  minPoints: 1000,    label: 'Level 01', color: 'text-yellow-400',       bg: 'bg-yellow-900/30',      border: 'border-yellow-600/30', unlock: ''           },
   { level: 2,  minPoints: 2000,    label: 'Level 02', color: 'text-yellow-300',       bg: 'bg-yellow-900/30',      border: 'border-yellow-500/30', unlock: ''           },
   { level: 3,  minPoints: 4000,    label: 'Level 03', color: 'text-blue-400',         bg: 'bg-blue-900/30',        border: 'border-blue-600/30',   unlock: ''           },

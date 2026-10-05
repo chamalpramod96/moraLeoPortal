@@ -10,6 +10,10 @@ describe('levels', () => {
     LEVELS.slice(1).forEach((lvl, i) => expect(lvl.minPoints).toBeGreaterThan(LEVELS[i].minPoints));
   });
 
+  it('every level is named "Level NN", starting at Level 00', () => {
+    LEVELS.forEach(l => expect(l.label).toBe(`Level ${String(l.level).padStart(2, '0')}`));
+  });
+
   it('only levels 8–10 have a title', () => {
     expect(LEVELS.filter(l => l.unlock).map(l => [l.level, l.unlock])).toEqual([
       [8, 'Leo Star'], [9, 'Leo Master'], [10, 'Leo Legend'],
