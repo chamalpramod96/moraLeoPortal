@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth }               from '../../context/AuthContext';
 import { getEvent, getAttendanceForEvent, saveEventAttendance } from '../../services/eventService';
@@ -8,7 +8,8 @@ import { refreshLeaderboardSoon } from '../../services/leaderboardService';
 import LoadingSpinner, { InlineSpinner } from '../../components/LoadingSpinner';
 import MemberAvatar              from '../../components/MemberAvatar';
 import { formatDate, safeHttpsUrl } from '../../utils/helpers';
-import { getEventCategory, isHybridEvent } from '../../data/pointsConfig';
+import { getEventCategory, isHybridEvent, isAttended } from '../../data/pointsConfig';
+import { matchMembers }          from '../../domain/memberSearch';
 
 // Hybrid club meetings record *how* a member attended: Physical earns the full
 // points, Online earns the event's online points.
@@ -45,12 +46,23 @@ function AttendancePage() {
   const [statusMap,      setStatusMap]   = useState({});
   const [loading,        setLoading]     = useState(true);
   const [saving,         setSaving]      = useState(false);
+  // Quick mark: type a name, press Enter to mark the first match present
+  const [query,          setQuery]       = useState('');
+  const [presentOnly,    setPresentOnly] = useState(false);
+  const [lastMarked,     setLastMarked]  = useState(null);   // { name, status }
+  const searchRef = useRef(null);
 
   // Always reflect the logged-in user's latest data (profile photo etc.)
   const members = useMemo(
     () => baseMembers.map(m => m.email === me?.email ? { ...m, ...me } : m),
     [baseMembers, me]
   );
+
+  // The rows shown: search matches (best first), optionally only those marked present
+  const visible = useMemo(() => {
+    const list = query.trim() ? matchMembers(members, query) : members;
+    return presentOnly ? list.filter(m => isAttended(statusMap[m.email])) : list;
+  }, [members, query, presentOnly, statusMap]);
 
   useEffect(() => {
     (async () => {
@@ -88,6 +100,22 @@ function AttendancePage() {
       members.forEach(m => { next[m.email] = 'attended'; });
       return next;
     });
+  };
+
+  const setStatus = (email, status) => setStatusMap(prev => ({ ...prev, [email]: status }));
+
+  // Enter marks the first match; Shift+Enter marks Online at a hybrid meeting
+  const handleSearchKey = (e) => {
+    if (e.key === 'Escape') { setQuery(''); return; }
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const m = query.trim() && visible[0];
+    if (!m) return;
+    const status = e.shiftKey && isHybridEvent(event) ? 'attended_online' : 'attended';
+    setStatus(m.email, status);
+    setLastMarked({ name: m.fullName, status });
+    setQuery('');
+    searchRef.current?.focus();
   };
 
   const handleSave = async () => {
@@ -226,30 +254,91 @@ function AttendancePage() {
         </div>
       </div>
 
+      {/* ── Quick mark: search by name ──────────────────────────────── */}
+      <div className="card-gold rounded-xl p-4 space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1">
+            <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2
+                           text-portal-muted/60 text-sm pointer-events-none" />
+            <input
+              ref={searchRef}
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={handleSearchKey}
+              placeholder="Type a name to mark them present…"
+              autoComplete="off"
+              spellCheck="false"
+              className="w-full bg-portal-bg border border-white/10 rounded-lg pl-9 pr-9 py-2.5
+                         text-portal-text placeholder-portal-muted/50 text-sm
+                         focus:outline-none focus:border-portal-gold/60 transition-colors"
+            />
+            {query && (
+              <button type="button" title="Clear search" onClick={() => { setQuery(''); searchRef.current?.focus(); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-portal-muted hover:text-portal-text p-1">
+                <i className="fa-solid fa-xmark text-xs" />
+              </button>
+            )}
+          </div>
+          <label className="flex items-center gap-2 text-xs text-portal-muted cursor-pointer select-none flex-shrink-0">
+            <input type="checkbox" checked={presentOnly} onChange={e => setPresentOnly(e.target.checked)}
+              className="accent-portal-gold" />
+            Show only members marked present
+          </label>
+        </div>
+        <p className="text-xs text-portal-muted">
+          {lastMarked && (
+            <span className={`mr-2 font-medium ${lastMarked.status === 'attended_online' ? 'text-sky-400' : 'text-green-400'}`}>
+              <i className="fa-solid fa-circle-check mr-1" />
+              {lastMarked.name} — {labels[lastMarked.status]}
+            </span>
+          )}
+          Press <strong className="text-portal-text">Enter</strong> to mark the first match
+          {hybrid ? <> <strong className="text-portal-text">Physical</strong> (Shift + Enter for Online)</> : ' as attended'}.
+          Members you don't mark stay Absent. Remember to Save.
+        </p>
+      </div>
+
       {/* ── Member list ─────────────────────────────────────────────── */}
       <div className="card rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-subtle text-xs text-portal-muted uppercase tracking-wide font-medium">
-          {members.length} Active Members — choose each member's status
+          {visible.length === members.length
+            ? `${members.length} Active Members`
+            : `Showing ${visible.length} of ${members.length} members`} — choose each member's status
           {hybrid && ' (Physical or Online for this hybrid meeting)'}
         </div>
 
         {members.length === 0 ? (
           <p className="text-center py-10 text-portal-muted text-sm">No active members found.</p>
+        ) : visible.length === 0 ? (
+          <p className="text-center py-10 text-portal-muted text-sm">
+            {query.trim() ? `No members match “${query.trim()}”.` : 'No members are marked present yet.'}
+          </p>
         ) : (
           <div className="divide-y divide-white/[0.04]">
-            {members.map(m => {
-              const status = statusMap[m.email] ?? 'absent';
+            {visible.map((m, i) => {
+              const status   = statusMap[m.email] ?? 'absent';
+              const isTarget = query.trim() && i === 0;   // what Enter will mark
               return (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between px-5 py-3
-                             hover:bg-portal-hover transition-colors"
+                  className={`flex items-center justify-between px-5 py-3
+                              hover:bg-portal-hover transition-colors
+                              ${isTarget ? 'bg-portal-gold/[0.07]' : ''}`}
                 >
                   {/* Member info */}
                   <div className="flex items-center gap-3 min-w-0">
                     <MemberAvatar member={m} />
                     <div className="min-w-0">
-                      <p className="text-portal-text text-sm font-medium truncate">{m.fullName}</p>
+                      <p className="text-portal-text text-sm font-medium truncate">
+                        {m.fullName}
+                        {isTarget && (
+                          <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-portal-gold
+                                           border border-portal-gold/40 rounded px-1.5 py-0.5 align-middle">
+                            Enter ↵
+                          </span>
+                        )}
+                      </p>
                       <p className="text-portal-muted text-xs">{m.position || 'Member'}</p>
                     </div>
                   </div>
@@ -259,7 +348,7 @@ function AttendancePage() {
                     {statuses.map(s => (
                       <button
                         key={s}
-                        onClick={() => setStatusMap(prev => ({ ...prev, [m.email]: s }))}
+                        onClick={() => setStatus(m.email, s)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                                     border transition-all
                                     ${status === s

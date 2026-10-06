@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchMembers } from './MemberPicker';
+import { matchMembers } from './memberSearch';
 
 const members = [
   { email: 'a@x.lk', fullName: 'Leo Akila Buddhika',            memberId: '4703831' },

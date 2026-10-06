@@ -1,30 +1,7 @@
 import { useState, useRef, useId } from 'react';
+import { matchMembers } from '../domain/memberSearch';
 
 const MAX_SUGGESTIONS = 8;
-
-/**
- * Members whose name or member ID contains `query` (any case), leaving out
- * `excluded` emails, best matches first (name starts with the text, then
- * any word does, then anywhere).
- */
-export function matchMembers(members, query, excluded = new Set(), limit = MAX_SUGGESTIONS) {
-  const q = query.trim().toLowerCase();
-  const rank = (m) => {
-    const name = (m.fullName ?? '').toLowerCase();
-    if (!q) return 0;
-    if (name.startsWith(q) || name.replace(/^leo\s+(lion\s+)?/, '').startsWith(q)) return 0;
-    if (name.split(/\s+/).some(w => w.startsWith(q))) return 1;
-    if (name.includes(q) || (m.memberId ?? '').toLowerCase().includes(q)) return 2;
-    return -1;
-  };
-  return members
-    .filter(m => !excluded.has(m.email))
-    .map(m => ({ m, r: rank(m) }))
-    .filter(x => x.r >= 0)
-    .sort((a, b) => a.r - b.r)
-    .slice(0, limit)
-    .map(x => x.m);
-}
 
 /**
  * Type-to-search member picker (replaces a long dropdown). `value` is the
@@ -41,7 +18,7 @@ function MemberPicker({ members, value, onChange, excluded, otherLabel = '', pla
 
   const selected = members.find(m => m.email === value);
   const label    = selected?.fullName ?? (value ? otherLabel : '');
-  const matches  = open ? matchMembers(members, query, excluded) : [];
+  const matches  = open ? matchMembers(members, query, excluded, MAX_SUGGESTIONS) : [];
 
   const choose = (m) => {
     onChange(m.email);
