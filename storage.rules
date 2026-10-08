@@ -69,6 +69,17 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    // ── Notice Board invitation cards ───────────────────────────────────────
+    // Path: notices/{noticeId}/{fileName}
+    // • Any active member can READ; only admins upload (photos, < 10 MB) or DELETE
+    match /notices/{noticeId}/{fileName} {
+      allow read:   if isActiveMember();
+      allow write:  if isAdmin()
+        && request.resource.size < 10 * 1024 * 1024
+        && isPhoto();
+      allow delete: if isAdmin();
+    }
+
     // ── Orientation Program files ───────────────────────────────────────────
     // Path: orientation/{fileId}/{fileName}
     // • Any active member can READ

@@ -16,3 +16,4 @@ export const MOCK_ATTENDANCE    = [];
 export const MOCK_MEMBER_POINTS = [];
 export const MOCK_PROJECTS      = [];
 export const MOCK_ORIENTATION   = [];
+export const MOCK_NOTICES       = [];

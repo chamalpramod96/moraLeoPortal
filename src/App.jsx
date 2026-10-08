@@ -16,6 +16,7 @@ import PointsTablePage   from './pages/PointsTablePage';
 import LeaderboardPage   from './pages/LeaderboardPage';
 import OrientationPage   from './pages/OrientationPage';
 import ProjectsPage      from './pages/ProjectsPage';
+import NoticeBoardPage   from './pages/NoticeBoardPage';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
             >
               <Route index           element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="notices"   element={<NoticeBoardPage />} />
               <Route path="profile"   element={<ProfilePage />} />
               <Route path="events"    element={<EventsPage />} />
               <Route path="projects"  element={<ProjectsPage />} />

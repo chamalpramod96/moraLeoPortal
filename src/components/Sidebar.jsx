@@ -4,6 +4,7 @@ import logo from '../assets/47OfficialLogo-web.png';
 
 const NAV_LINKS = [
   { to: '/dashboard',           label: 'Dashboard',     icon: 'fa-gauge-high'    },
+  { to: '/notices',             label: 'Notice Board',  icon: 'fa-bullhorn'      },
   { to: '/profile',             label: 'My Profile',    icon: 'fa-user'          },
   { to: '/events',              label: 'Events',        icon: 'fa-calendar-days' },
   { to: '/projects',            label: 'Projects',      icon: 'fa-diagram-project' },

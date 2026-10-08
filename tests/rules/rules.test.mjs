@@ -194,6 +194,38 @@ await check('member uploads project image',          'deny',  () => st('active@x
 await check('secretary deletes project image',       'allow', () => st('admin@x.com').ref('projects/pr1/cover.png').delete());
 await check('secretary deletes a project',           'allow', () => fs('admin@x.com').doc('projects/pr1').delete());
 
+console.log('Notice Board');
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc('notices/n1').set({ title: 'Installation', description: '', imageUrl: '', link: '' });
+  await ctx.storage().ref('notices/n1/card.png').put(PNG, { contentType: 'image/png' });
+});
+const notice = (extra = {}) => ({
+  title: 'Beach Clean-up', description: 'Meet at 7 AM', place: 'Mount Lavinia',
+  imageUrl: '', link: '', ...extra,
+});
+const STORAGE_URL = 'https://firebasestorage.googleapis.com/v0/b/x/o/notices%2Fn2%2Fa.png?alt=media&token=t';
+await check('active member lists notices',           'allow', () => fs('active@x.com').collection('notices').get());
+await check('stranger lists notices',                'deny',  () => fs('stranger@x.com').collection('notices').get());
+await check('deactivated member lists notices',      'deny',  () => fs('inactive@x.com').collection('notices').get());
+await check('secretary posts a notice',              'allow', () => fs('admin@x.com').doc('notices/n2').set(notice()));
+await check('secretary posts notice with card+link', 'allow', () => fs('admin@x.com').doc('notices/n3').set(notice({ imageUrl: STORAGE_URL, link: 'https://forms.gle/abc' })));
+await check('secretary posts notice, outside image', 'deny',  () => fs('admin@x.com').doc('notices/n4').set(notice({ imageUrl: 'https://evil.example/a.png' })));
+await check('secretary posts notice, javascript link','deny', () => fs('admin@x.com').doc('notices/n5').set(notice({ link: 'javascript:alert(1)' })));
+await check('secretary posts notice, http link',     'deny',  () => fs('admin@x.com').doc('notices/n6').set(notice({ link: 'http://example.com' })));
+await check('secretary posts notice, empty title',   'deny',  () => fs('admin@x.com').doc('notices/n7').set(notice({ title: '' })));
+await check('secretary posts notice, huge description','deny',() => fs('admin@x.com').doc('notices/n8').set(notice({ description: 'x'.repeat(3001) })));
+await check('member posts a notice',                 'deny',  () => fs('active@x.com').doc('notices/n9').set(notice()));
+await check('member edits a notice',                 'deny',  () => fs('active@x.com').doc('notices/n1').update({ title: 'Hacked' }));
+await check('deactivated admin edits a notice',      'deny',  () => fs('exadmin@x.com').doc('notices/n1').update({ title: 'Hacked' }));
+await check('member deletes a notice',               'deny',  () => fs('active@x.com').doc('notices/n1').delete());
+await check('active member sees invitation card',    'allow', () => st('active@x.com').ref('notices/n1/card.png').getMetadata());
+await check('stranger sees invitation card',         'deny',  () => st('stranger@x.com').ref('notices/n1/card.png').getMetadata());
+await check('secretary uploads invitation card',     'allow', () => st('admin@x.com').ref('notices/n2/a.png').put(PNG, { contentType: 'image/png' }));
+await check('secretary uploads SVG card',            'deny',  () => st('admin@x.com').ref('notices/n2/b.svg').put(PNG, { contentType: 'image/svg+xml' }));
+await check('member uploads invitation card',        'deny',  () => st('active@x.com').ref('notices/n2/c.png').put(PNG, { contentType: 'image/png' }));
+await check('secretary deletes invitation card',     'allow', () => st('admin@x.com').ref('notices/n1/card.png').delete());
+await check('secretary deletes a notice',            'allow', () => fs('admin@x.com').doc('notices/n1').delete());
+
 await testEnv.cleanup();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

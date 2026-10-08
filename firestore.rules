@@ -124,6 +124,25 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── Notice Board ─────────────────────────────────────────────────────────
+    // Every active member can view; admins post, edit and remove. The card
+    // image must be in Storage and the optional link a plain https:// link.
+    match /notices/{noticeId} {
+      allow read: if isActiveMember();
+      allow create, update: if isAdmin() &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 150 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() <= 3000 &&
+        request.resource.data.imageUrl is string &&
+        (request.resource.data.imageUrl == '' ||
+         request.resource.data.imageUrl.matches('https://firebasestorage[.]googleapis[.]com/.*')) &&
+        request.resource.data.link is string &&
+        (request.resource.data.link == '' || request.resource.data.link.matches('https://.*'));
+      allow delete: if isAdmin();
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

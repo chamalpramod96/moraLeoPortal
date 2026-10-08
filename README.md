@@ -48,6 +48,7 @@ src/
     pointsService.js     memberPoints (manual "awards")
     projectService.js    projects (+ poster images)
     orientationService.js orientation files
+    noticeService.js     Notice Board (+ invitation cards)
     leaderboardService.js computes + publishes leaderboard/current
     storageService.js    profile and event photos
     firestoreUtils.js    small shared helpers (ids, dates, batched deletes)
@@ -60,6 +61,7 @@ src/
   pages/               One file per screen; page-specific parts in subfolders
     admin/               Members, Manage Events, Attendance (+ their forms/modals)
     projects/            ProjectCard, ProjectFormModal
+    notices/             NoticeCard, NoticeFormModal
 tests/rules/           Security-rules tests (Firestore + Storage)
 firestore.rules        Who can read/write what in the database
 storage.rules          Who can upload/read files
@@ -81,6 +83,7 @@ Firebase SDK; business rules (points, levels, roles) live in `domain/` and
 | `memberPoints/{id}`       | memberId, points, categoryId, description                                | the member's own, admins | admins                   |
 | `projects/{id}`           | name, date, imageUrl, roles {chairperson, secretary, treasurer: {key, name}}, rolePoints | active members | admins |
 | `orientation/{id}`        | title, description, fileName, url, storagePath                           | active members          | admins                   |
+| `notices/{id}`            | title, date, time, place, description, link (https), imageUrl            | active members          | admins                   |
 | `leaderboard/current`     | rows [{key, name, position, total, rank, …}]                             | active members          | admins (recomputed automatically) |
 
 - **Roles:** `member`, `secretary`, `president`, `superAdmin`. The last three are
@@ -114,9 +117,9 @@ firebase deploy --only firestore:rules,storage
 
 ## Security-rules tests
 
-`tests/rules/rules.test.mjs` checks 118 allow/deny cases (members can't read
+`tests/rules/rules.test.mjs` checks 139 allow/deny cases (members can't read
 each other's data, deactivated members lose access, only admins write, only
-photo types upload, …) against the local emulators under a `demo-` project,
+photo types upload, notices only take https links, …) against the local emulators under a `demo-` project,
 so it never touches real data. It also runs on GitHub
 (`.github/workflows/rules-tests.yml`) whenever the rules change.
 
