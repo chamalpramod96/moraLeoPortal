@@ -245,7 +245,32 @@ function ProfilePage() {
             No attendance records yet.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Phones and tablets: one compact row per event */}
+          <div className="lg:hidden divide-y divide-subtle">
+            {attWithEvent.map(rec => {
+              const pts = eventPointsFor(rec.status, rec.event);
+              return (
+                <div key={rec.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-portal-text text-sm font-medium break-words">{rec.event?.title ?? 'Unknown Event'}</p>
+                    <p className="text-portal-muted text-xs mt-0.5">
+                      {formatDateShort(rec.event?.date)}{rec.event?.category && ` · ${rec.event.category}`}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <Badge status={rec.status} />
+                    {pts > 0
+                      ? <span className="text-portal-gold text-sm font-bold">+{pts}</span>
+                      : <span className="text-portal-muted text-xs">—</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Larger screens: the full table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-subtle">
@@ -289,6 +314,7 @@ function ProfilePage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

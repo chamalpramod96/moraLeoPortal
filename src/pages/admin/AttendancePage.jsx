@@ -322,15 +322,15 @@ function AttendancePage() {
               return (
                 <div
                   key={m.id}
-                  className={`flex items-center justify-between px-5 py-3
-                              hover:bg-portal-hover transition-colors
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-0
+                              px-4 sm:px-5 py-3 hover:bg-portal-hover transition-colors
                               ${isTarget ? 'bg-portal-gold/[0.07]' : ''}`}
                 >
-                  {/* Member info */}
+                  {/* Member info (on phones the buttons go underneath, so the name has room) */}
                   <div className="flex items-center gap-3 min-w-0">
                     <MemberAvatar member={m} />
                     <div className="min-w-0">
-                      <p className="text-portal-text text-sm font-medium truncate">
+                      <p className="text-portal-text text-sm font-medium break-words sm:truncate">
                         {m.fullName}
                         {isTarget && (
                           <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-portal-gold
@@ -344,20 +344,21 @@ function AttendancePage() {
                   </div>
 
                   {/* Status toggle buttons */}
-                  <div className="flex gap-2 flex-shrink-0 ml-4">
+                  <div className={`grid ${statuses.length === 4 ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5
+                                   sm:flex sm:gap-2 sm:flex-shrink-0 sm:ml-4`}>
                     {statuses.map(s => (
                       <button
                         key={s}
                         onClick={() => setStatus(m.email, s)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                                    border transition-all
+                        className={`flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg
+                                    text-xs font-medium border transition-all
                                     ${status === s
                                       ? STATUS_STYLES[s]
                                       : 'border-white/5 text-portal-muted hover:border-white/20'
                                     }`}
                       >
                         <i className={`fa-solid ${STATUS_ICONS[s]}`} />
-                        <span className="hidden sm:inline">{labels[s]}</span>
+                        <span>{labels[s]}</span>
                       </button>
                     ))}
                   </div>

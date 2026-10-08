@@ -136,12 +136,14 @@ export default function LeaderboardPage() {
           ) : (
             <div className="card rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                {/* Fixed layout: Rank and Points keep their width and long names
+                    wrap, so the table always fits a phone screen */}
+                <table className="w-full text-sm table-fixed">
                   <thead>
                     <tr className="border-b border-subtle bg-white/[0.03]">
-                      <th className="px-4 py-3 text-center text-xs uppercase tracking-wider text-portal-muted w-14">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs uppercase tracking-wider text-portal-muted">Member</th>
-                      <th className="px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted">Points</th>
+                      <th className="px-2 sm:px-4 py-3 text-center text-xs uppercase tracking-wider text-portal-muted w-12 sm:w-16">Rank</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs uppercase tracking-wider text-portal-muted">Member</th>
+                      <th className="px-2 sm:px-4 py-3 text-right text-xs uppercase tracking-wider text-portal-muted w-20 sm:w-28">Points</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-subtle">
@@ -151,15 +153,15 @@ export default function LeaderboardPage() {
                         <tr key={row.key}
                             className={`transition-colors hover:bg-white/[0.03]
                                         ${isMe ? 'bg-portal-gold/10' : row.rank <= 3 ? 'bg-white/[0.02]' : ''}`}>
-                          <td className="px-4 py-3.5 text-center">{medalIcon(row.rank)}</td>
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center gap-3">
+                          <td className="px-2 sm:px-4 py-3.5 text-center">{medalIcon(row.rank)}</td>
+                          <td className="px-2 sm:px-4 py-3.5">
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                               <div className="w-8 h-8 rounded-full bg-portal-red/20 border border-portal-gold/30
-                                              flex items-center justify-center flex-shrink-0">
+                                              hidden sm:flex items-center justify-center flex-shrink-0">
                                 <span className="text-xs font-bold text-portal-gold">{initials(row.name)}</span>
                               </div>
                               <div className="min-w-0">
-                                <p className="text-portal-text font-medium truncate">
+                                <p className="text-portal-text font-medium break-words leading-snug">
                                   {row.name}
                                   {isMe && (
                                     <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide
@@ -172,8 +174,8 @@ export default function LeaderboardPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3.5 text-right">
-                            <span className="text-portal-gold font-bold font-mono text-base">
+                          <td className="px-2 sm:px-4 py-3.5 text-right">
+                            <span className="text-portal-gold font-bold font-mono text-sm sm:text-base">
                               {row.total.toLocaleString()}
                             </span>
                           </td>

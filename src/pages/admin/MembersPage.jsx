@@ -184,6 +184,42 @@ function MembersPage() {
     refetch();
   };
 
+  // Row actions — shared by the table (larger screens) and the cards (phones)
+  const renderActions = (m) => (
+    <>
+      {/* Only a Super Admin can edit a Super Admin (rules enforce this too) */}
+      {(m.role !== ROLES.SUPER_ADMIN || isSuperAdmin) && (
+        <button onClick={() => openEdit(m)} title="Edit"
+          className="text-portal-muted hover:text-portal-gold transition-colors p-2 xl:p-1">
+          <i className="fa-solid fa-pen-to-square" />
+        </button>
+      )}
+      <button onClick={() => setPointsTarget(m)} title="Manage Points"
+        className="text-portal-muted hover:text-yellow-400 transition-colors p-2 xl:p-1">
+        <i className="fa-solid fa-trophy" />
+      </button>
+      {m.isActive && (
+        <button onClick={() => handleResendInvite(m)} title="Resend invite (set-password email)"
+          disabled={inviting === m.email}
+          className="text-portal-muted hover:text-sky-400 disabled:opacity-50 transition-colors p-2 xl:p-1">
+          <i className={`fa-solid ${inviting === m.email ? 'fa-spinner fa-spin' : 'fa-envelope'}`} />
+        </button>
+      )}
+      {!m.isActive && m.email !== me?.email && (
+        <button onClick={() => setConfirm({ member: m })} title="Reactivate"
+          className="text-portal-muted hover:text-green-400 transition-colors p-2 xl:p-1">
+          <i className="fa-solid fa-user-check" />
+        </button>
+      )}
+      {isSuperAdmin && m.email !== me?.email && (
+        <button onClick={() => setRemoveItem(m)} title="Remove member permanently"
+          className="text-portal-muted hover:text-red-400 transition-colors p-2 xl:p-1">
+          <i className="fa-solid fa-user-xmark" />
+        </button>
+      )}
+    </>
+  );
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -221,8 +257,35 @@ function MembersPage() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="card rounded-xl overflow-hidden">
+      {/* Phones, tablets and small laptops: one card per member */}
+      <div className="xl:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <div className="card rounded-xl p-8 text-center text-portal-muted text-sm">No members found.</div>
+        ) : filtered.map(m => (
+          <div key={m.id} className="card rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <MemberAvatar member={m} />
+              <div className="min-w-0 flex-1">
+                <p className="text-portal-text font-medium break-words">{m.fullName}</p>
+                <p className="text-portal-muted text-xs break-all">{m.email}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3 text-xs text-portal-muted">
+              {m.memberId && <span className="font-mono">{m.memberId}</span>}
+              {m.position && <span>{m.position}</span>}
+              {m.term && <span>Term {m.term}</span>}
+              <Badge status={m.role} />
+              <Badge status={m.isActive ? 'active' : 'inactive'} />
+            </div>
+            <div className="flex items-center gap-1 mt-3 pt-2 border-t border-subtle -mx-1">
+              {renderActions(m)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Larger screens: the table */}
+      <div className="hidden xl:block card rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -261,38 +324,7 @@ function MembersPage() {
                     <td className="px-4 py-3"><Badge status={m.role} /></td>
                     <td className="px-4 py-3"><Badge status={m.isActive ? 'active' : 'inactive'} /></td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {/* Only a Super Admin can edit a Super Admin (rules enforce this too) */}
-                        {(m.role !== ROLES.SUPER_ADMIN || isSuperAdmin) && (
-                          <button onClick={() => openEdit(m)} title="Edit"
-                            className="text-portal-muted hover:text-portal-gold transition-colors p-1">
-                            <i className="fa-solid fa-pen-to-square" />
-                          </button>
-                        )}
-                        <button onClick={() => setPointsTarget(m)} title="Manage Points"
-                          className="text-portal-muted hover:text-yellow-400 transition-colors p-1">
-                          <i className="fa-solid fa-trophy" />
-                        </button>
-                        {m.isActive && (
-                          <button onClick={() => handleResendInvite(m)} title="Resend invite (set-password email)"
-                            disabled={inviting === m.email}
-                            className="text-portal-muted hover:text-sky-400 disabled:opacity-50 transition-colors p-1">
-                            <i className={`fa-solid ${inviting === m.email ? 'fa-spinner fa-spin' : 'fa-envelope'}`} />
-                          </button>
-                        )}
-                        {!m.isActive && m.email !== me?.email && (
-                          <button onClick={() => setConfirm({ member: m })} title="Reactivate"
-                            className="text-portal-muted hover:text-green-400 transition-colors p-1">
-                            <i className="fa-solid fa-user-check" />
-                          </button>
-                        )}
-                        {isSuperAdmin && m.email !== me?.email && (
-                          <button onClick={() => setRemoveItem(m)} title="Remove member permanently"
-                            className="text-portal-muted hover:text-red-400 transition-colors p-1">
-                            <i className="fa-solid fa-user-xmark" />
-                          </button>
-                        )}
-                      </div>
+                      <div className="flex items-center gap-2">{renderActions(m)}</div>
                     </td>
                   </tr>
                 ))
