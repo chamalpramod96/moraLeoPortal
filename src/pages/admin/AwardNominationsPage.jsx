@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth }        from '../../context/AuthContext';
 import { useToast }       from '../../context/ToastContext';
 import LoadingSpinner, { InlineSpinner } from '../../components/LoadingSpinner';
@@ -9,6 +9,8 @@ import { emptyEntry, normalizeEntry, isSameEntry, countNominated, nominationsCsv
 
 const ORDINALS     = ['1st', '2nd', '3rd'];
 const PROJECT_LIST = 'award-project-names';   // <datalist> of existing project names
+
+const blankDrafts = () => Object.fromEntries(AWARD_CATEGORIES.map(c => [c.id, emptyEntry()]));
 
 const inputClass = `w-full bg-portal-bg border border-white/5 rounded-lg px-2.5 py-1.5
                     text-portal-text text-sm placeholder-portal-muted/40
@@ -38,10 +40,11 @@ function AwardNominationsPage() {
   const { showToast }  = useToast();
 
   const [saved,    setSaved]    = useState({});    // categoryId → entry (as stored)
-  const [drafts,   setDrafts]   = useState({});    // categoryId → entry (as typed)
+  const [drafts,   setDrafts]   = useState(blankDrafts);   // categoryId → entry (as typed)
   const [status,   setStatus]   = useState({});    // categoryId → 'saving' | 'saved' | 'error'
   const [projects, setProjects] = useState([]);    // existing project names, for suggestions
   const [loading,  setLoading]  = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search,   setSearch]   = useState('');
 
   // Latest values for the async save queue
@@ -51,20 +54,26 @@ function AwardNominationsPage() {
   draftsRef.current = drafts;
   savedRef.current  = saved;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [entries, projectList] = await Promise.all([getAwardNominations(), getProjects()]);
-        setSaved(entries);
-        setDrafts(Object.fromEntries(AWARD_CATEGORIES.map(c => [c.id, entries[c.id] ?? emptyEntry()])));
-        setProjects([...new Set(projectList.map(p => p.name).filter(Boolean))].sort());
-      } catch {
-        showToast('Could not load the award nominations.', 'error');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [showToast]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const entries = await getAwardNominations();
+      setSaved(entries);
+      setDrafts(Object.fromEntries(AWARD_CATEGORIES.map(c => [c.id, entries[c.id] ?? emptyEntry()])));
+      // Suggestions only — the page works without them
+      getProjects()
+        .then(list => setProjects([...new Set(list.map(p => p.name).filter(Boolean))].sort()))
+        .catch(() => {});
+    } catch {
+      // Don't show an editable table that can't be saved
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const dirtyIds = useMemo(
     () => AWARD_CATEGORIES.filter(c => drafts[c.id] && !isSameEntry(drafts[c.id], saved[c.id] ?? emptyEntry())).map(c => c.id),
@@ -80,7 +89,8 @@ function AwardNominationsPage() {
   }, [dirtyIds.length]);
 
   const edit = (id, field, index, value) => setDrafts(prev => {
-    const entry = { ...prev[id], nominations: [...prev[id].nominations] };
+    const current = prev[id] ?? emptyEntry();
+    const entry = { ...current, nominations: [...current.nominations] };
     if (field === 'comment') entry.comment = value; else entry.nominations[index] = value;
     return { ...prev, [id]: entry };
   });
@@ -113,6 +123,24 @@ function AwardNominationsPage() {
   };
 
   if (loading) return <LoadingSpinner />;
+
+  if (loadError) {
+    return (
+      <div className="card rounded-xl p-10 text-center space-y-3">
+        <i className="fa-solid fa-triangle-exclamation text-3xl text-portal-gold" />
+        <p className="text-portal-text font-semibold">Could not load the award nominations</p>
+        <p className="text-portal-muted text-sm">
+          Check your internet connection. If this keeps happening, the page's access rules may not be
+          published yet — ask the site admin.
+        </p>
+        <button onClick={load}
+          className="mx-auto bg-portal-red hover:bg-portal-red-dark text-white font-semibold px-5 py-2
+                     rounded-lg text-sm flex items-center gap-2 transition-colors">
+          <i className="fa-solid fa-rotate-right" /> Try again
+        </button>
+      </div>
+    );
+  }
 
   const q = search.trim().toLowerCase();
   const groups = AWARD_GROUPS
