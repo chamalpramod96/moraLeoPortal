@@ -16,6 +16,7 @@ const NAV_LINKS = [
 const ADMIN_LINKS = [
   { to: '/admin/members',       label: 'Members',       icon: 'fa-users'         },
   { to: '/admin/events',        label: 'Manage Events', icon: 'fa-calendar-plus' },
+  { to: '/admin/awards',        label: 'Project Awards', icon: 'fa-award'        },
 ];
 
 function NavItem({ to, label, icon, onClick }) {

@@ -143,6 +143,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── Project award nominations ────────────────────────────────────────────
+    // Admins only (members can't see it). One document per award category:
+    // exactly 3 nomination strings and a comment.
+    match /awardNominations/{categoryId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() &&
+        request.resource.data.nominations is list &&
+        request.resource.data.nominations.size() == 3 &&
+        request.resource.data.nominations[0] is string && request.resource.data.nominations[0].size() <= 200 &&
+        request.resource.data.nominations[1] is string && request.resource.data.nominations[1].size() <= 200 &&
+        request.resource.data.nominations[2] is string && request.resource.data.nominations[2].size() <= 200 &&
+        request.resource.data.comment is string &&
+        request.resource.data.comment.size() <= 1000;
+      allow delete: if isAdmin();
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

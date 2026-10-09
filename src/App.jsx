@@ -12,6 +12,7 @@ import EventsPage         from './pages/EventsPage';
 import MembersPage        from './pages/admin/MembersPage';
 import AdminEventsPage    from './pages/admin/AdminEventsPage';
 import AttendancePage     from './pages/admin/AttendancePage';
+import AwardNominationsPage from './pages/admin/AwardNominationsPage';
 import PointsTablePage   from './pages/PointsTablePage';
 import LeaderboardPage   from './pages/LeaderboardPage';
 import OrientationPage   from './pages/OrientationPage';
@@ -63,6 +64,14 @@ function App() {
                 element={
                   <ProtectedRoute requireAdmin>
                     <AdminEventsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/awards"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AwardNominationsPage />
                   </ProtectedRoute>
                 }
               />

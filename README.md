@@ -49,6 +49,7 @@ src/
     projectService.js    projects (+ poster images)
     orientationService.js orientation files
     noticeService.js     Notice Board (+ invitation cards)
+    awardService.js      Project award nominations (admins only)
     leaderboardService.js computes + publishes leaderboard/current
     storageService.js    profile and event photos
     firestoreUtils.js    small shared helpers (ids, dates, batched deletes)
@@ -59,7 +60,7 @@ src/
   components/          Shared UI: Layout, Sidebar, Navbar, Modal, ConfirmDialog,
                        PasswordConfirmModal, AuthLayout, avatars, spinners, …
   pages/               One file per screen; page-specific parts in subfolders
-    admin/               Members, Manage Events, Attendance (+ their forms/modals)
+    admin/               Members, Manage Events, Attendance, Project Awards (+ their forms/modals)
     projects/            ProjectCard, ProjectFormModal
     notices/             NoticeCard, NoticeFormModal
 tests/rules/           Security-rules tests (Firestore + Storage)
@@ -83,6 +84,7 @@ Firebase SDK; business rules (points, levels, roles) live in `domain/` and
 | `memberPoints/{id}`       | memberId, points, categoryId, description                                | the member's own, admins | admins                   |
 | `projects/{id}`           | name, date, imageUrl, roles {chairperson, secretary, treasurer: {key, name}}, rolePoints | active members | admins |
 | `orientation/{id}`        | title, description, fileName, url, storagePath                           | active members          | admins                   |
+| `awardNominations/{id}`   | nominations [3 project names], comment — one per fixed award category (`data/awardCategories.js`) | admins | admins |
 | `notices/{id}`            | title, date, time, place, description, link (https), imageUrl            | active members          | admins                   |
 | `leaderboard/current`     | rows [{key, name, position, total, rank, …}]                             | active members          | admins (recomputed automatically) |
 

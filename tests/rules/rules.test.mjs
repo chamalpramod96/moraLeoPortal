@@ -226,6 +226,24 @@ await check('member uploads invitation card',        'deny',  () => st('active@x
 await check('secretary deletes invitation card',     'allow', () => st('admin@x.com').ref('notices/n1/card.png').delete());
 await check('secretary deletes a notice',            'allow', () => fs('admin@x.com').doc('notices/n1').delete());
 
+console.log('Project award nominations (admins only)');
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc('awardNominations/a01').set({ nominations: ['Kids Camp', '', ''], comment: '' });
+});
+const nom = (extra = {}) => ({ nominations: ['Blood Camp', 'Book Drive', ''], comment: 'Strong', ...extra });
+await check('secretary reads nominations',            'allow', () => fs('admin@x.com').collection('awardNominations').get());
+await check('member reads nominations',               'deny',  () => fs('active@x.com').collection('awardNominations').get());
+await check('member reads one nomination',            'deny',  () => fs('active@x.com').doc('awardNominations/a01').get());
+await check('stranger reads nominations',             'deny',  () => fs('stranger@x.com').doc('awardNominations/a01').get());
+await check('deactivated admin reads nominations',    'deny',  () => fs('exadmin@x.com').doc('awardNominations/a01').get());
+await check('secretary saves nominations',            'allow', () => fs('admin@x.com').doc('awardNominations/a02').set(nom()));
+await check('superAdmin updates nominations',         'allow', () => fs('super@x.com').doc('awardNominations/a01').set(nom({ comment: '' })));
+await check('member saves nominations',               'deny',  () => fs('active@x.com').doc('awardNominations/a03').set(nom()));
+await check('secretary saves 4 nominations',          'deny',  () => fs('admin@x.com').doc('awardNominations/a04').set(nom({ nominations: ['a', 'b', 'c', 'd'] })));
+await check('secretary saves a non-text nomination',  'deny',  () => fs('admin@x.com').doc('awardNominations/a05').set(nom({ nominations: [1, '', ''] })));
+await check('secretary saves a huge comment',         'deny',  () => fs('admin@x.com').doc('awardNominations/a06').set(nom({ comment: 'x'.repeat(1001) })));
+await check('secretary saves a huge nomination',      'deny',  () => fs('admin@x.com').doc('awardNominations/a07').set(nom({ nominations: ['x'.repeat(201), '', ''] })));
+
 await testEnv.cleanup();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
